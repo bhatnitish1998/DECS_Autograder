@@ -4,7 +4,6 @@
 #include <iostream>
 #include <string>
 #include <mutex>
-#include <string>
 #include <sstream>
 #include <fstream>
 #include <unistd.h>
@@ -15,8 +14,8 @@
 #include <vector>
 #include <thread>
 
-uint32_t filename_ticket = 0;
-std::mutex ticket_lock;
+extern uint32_t filename_ticket;
+extern std::mutex ticket_lock;
 
 
 class Worker

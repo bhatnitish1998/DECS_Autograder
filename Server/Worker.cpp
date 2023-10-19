@@ -1,4 +1,9 @@
-#include "Worker.hpp";
+#include "Worker.hpp"
+
+
+uint32_t filename_ticket = 0;
+std::mutex ticket_lock;
+
 
 Worker ::Worker(int newsockfd) : newsockfd(newsockfd)
 {
