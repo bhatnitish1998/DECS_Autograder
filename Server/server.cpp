@@ -12,22 +12,20 @@
 #include <vector>
 #include <thread>
 
-using namespace std;
-
 uint32_t filename_ticket = 0;
-mutex ticket_lock;
+std::mutex ticket_lock;
 
 class Worker
 {
     int newsockfd;
-    string file_identifier;
-    string program_file;
-    string executable_file;
-    string output_file;
-    string msg;
-    string file_to_send;
+    std::string file_identifier;
+    std::string program_file;
+    std::string executable_file;
+    std::string output_file;
+    std::string msg;
+    std::string file_to_send;
     bool done;
-    vector<string> cleanuplist;
+    std::vector<std::string> cleanuplist;
 
     void cleanup()
     {
@@ -44,7 +42,7 @@ class Worker
             throw("file size read error");
         file_size = ntohl(file_size);
 
-        ofstream fout(program_file.c_str(), ios::binary);
+        std::ofstream fout(program_file.c_str(), std::ios::binary);
         if (!fout)
             throw("error opening program file");
 
@@ -73,13 +71,13 @@ class Worker
 
             if (write(newsockfd, &length_to_send, sizeof(length_to_send)) < 0)
                 throw("error sending message size");
-            
+
             if (write(newsockfd, msg.c_str(), msg.length()) < 0)
                 throw("error sending message");
 
             return;
         }
-        uint32_t response_size = filesystem::file_size(file_to_send);
+        uint32_t response_size = std::filesystem::file_size(file_to_send);
         response_size += msg.length();
         uint32_t length_to_send = htonl(response_size);
 
@@ -88,11 +86,11 @@ class Worker
 
         if (write(newsockfd, msg.c_str(), msg.length()) < 0)
             throw("error sending message");
-        
-        ifstream fin(file_to_send, ios::binary);
+
+        std::ifstream fin(file_to_send, std::ios::binary);
         if (!fin)
             throw("error opening file");
-        
+
         char buffer[1024];
         while (!fin.eof())
         {
@@ -108,8 +106,8 @@ class Worker
 
     void compile()
     {
-        string compiler_filename = file_identifier + "compiler.txt";
-        string cmd = "g++ -o " + executable_file + " " + program_file + " > /dev/null 2> " + compiler_filename;
+        std::string compiler_filename = file_identifier + "compiler.txt";
+        std::string cmd = "g++ -o " + executable_file + " " + program_file + " > /dev/null 2> " + compiler_filename;
         if (system(cmd.c_str()) != 0)
         {
             msg = "COMPILER ERROR\n";
@@ -122,8 +120,8 @@ class Worker
 
     void run_program()
     {
-        string runtime_filename = file_identifier + "runtime.txt";
-        string cmd = "./" + executable_file + " > " + output_file + " 2> " + runtime_filename;
+        std::string runtime_filename = file_identifier + "runtime.txt";
+        std::string cmd = "./" + executable_file + " > " + output_file + " 2> " + runtime_filename;
         if (system(cmd.c_str()) != 0)
         {
             msg = "RUNTIME ERROR\n";
@@ -137,8 +135,8 @@ class Worker
 
     void compare_output()
     {
-        string diff_filename = file_identifier + "diff.txt";
-        string cmd = "diff -Z " + output_file + " solution.txt > " + diff_filename;
+        std::string diff_filename = file_identifier + "diff.txt";
+        std::string cmd = "diff -Z " + output_file + " solution.txt > " + diff_filename;
 
         if (system(cmd.c_str()) != 0)
         {
@@ -153,7 +151,7 @@ public:
     Worker(int newsockfd) : newsockfd(newsockfd)
     {
         ticket_lock.lock();
-        file_identifier = to_string(++filename_ticket);
+        file_identifier = std::to_string(++filename_ticket);
         ticket_lock.unlock();
         program_file = file_identifier + "prog.cpp";
         msg = "PASS\n";
@@ -199,7 +197,7 @@ class Server
             throw("Error while binding");
 
         listen(sockfd, backlog);
-        cout << "Server ready and listening at " << server_addr.sin_addr.s_addr << ":" << port << endl;
+        std::cout << "Server ready and listening at " << server_addr.sin_addr.s_addr << ":" << port << std::endl;
     }
 
 public:
@@ -218,7 +216,7 @@ public:
         if (newsockfd < 0)
             throw("Error accepting connection");
 
-        thread (&Server::thread_function, this, newsockfd).detach();
+        std::thread(&Server::thread_function, this, newsockfd).detach();
     }
 
     void thread_function(int newsockfd)
@@ -227,7 +225,6 @@ public:
         // cout << "TID: " << this_thread::get_id() << endl;
         worker.process_request();
     }
-
 };
 
 int main(int argc, char const *argv[])
@@ -239,7 +236,7 @@ int main(int argc, char const *argv[])
         perror("Usage : ./server <port>");
         exit(1);
     }
-    port = stoi(argv[1]);
+    port = std::stoi(argv[1]);
 
     // int port = 9001;
 
@@ -251,7 +248,7 @@ int main(int argc, char const *argv[])
     }
     catch (const char *msg)
     {
-        cerr<<msg<<endl;
+        std::cerr << msg << std::endl;
     }
 
     return 0;
