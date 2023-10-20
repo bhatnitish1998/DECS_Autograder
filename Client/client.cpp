@@ -11,31 +11,45 @@
 #include <filesystem>
 
 using namespace std;
-
+// TODO: ADD Namespace std
 class Client
 {
-    int sockfd;
+    int sockfd, iterations;
+    addrinfo *servinfo;
     string program_filename;
-    string server_ip;
-    int server_port;
-    int iterations;
-    int sleep_time;
-    int success;
+    string serverIp, port;
+    size_t n_responses, sleepTime, timeout, n_timeout, n_succ, n_req;
     vector<double> response_times;
+
+    void parseAddress(std::string remoteAddress)
+    {
+        size_t colonPos = remoteAddress.find(':');
+
+        if (colonPos == std::string::npos)
+        {
+            throw("Invalid server argument format. Use <server-ip:port>");
+        }
+
+        // Extract the IP address and port
+        serverIp = remoteAddress.substr(0, colonPos);
+        port = remoteAddress.substr(colonPos + 1);
+    }
 
     void setup_socket()
     {
-        sockfd = socket(AF_INET, SOCK_STREAM, 0);
-        if (sockfd < 0)
+        if ((sockfd = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol)) == -1)
             throw("Error opening socket");
 
-        sockaddr_in server_addr;
-        memset(&server_addr, 0, sizeof(server_addr));
-        server_addr.sin_family = AF_INET;
-        server_addr.sin_port = htons(server_port);
-        server_addr.sin_addr.s_addr = inet_addr(server_ip.c_str());
+        timeval time_out;
+        time_out.tv_sec = timeout;
+        time_out.tv_usec = 0;
+        if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &time_out, sizeof(time_out)) == -1)
+        {
+            close(sockfd);
+            throw("Set socket timeout failed");
+        }
 
-        int sc = connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr));
+        int sc = connect(sockfd, servinfo->ai_addr, servinfo->ai_addrlen);
         if (sc < 0)
             throw("Cannot connect");
     }
@@ -68,10 +82,15 @@ class Client
     void receive_response()
     {
         string response = "";
-
+        int status;
         uint32_t message_size;
-        if (read(sockfd, &message_size, sizeof(message_size)) < 0)
+        if ((status = read(sockfd, &message_size, sizeof(message_size))) < 0)
+        {
+            if (errno == EWOULDBLOCK)
+                n_timeout++;
             throw("file size read error");
+        }
+
         message_size = ntohl(message_size);
 
         char buffer[1024];
@@ -82,8 +101,12 @@ class Client
             current_read = 0;
             memset(buffer, 0, sizeof(buffer));
             current_read = read(sockfd, buffer, sizeof(buffer));
-            if (current_read == 0)
+            if (current_read < 0)
+            {
+                if (errno == EWOULDBLOCK)
+                    n_timeout++;
                 throw("socket read error");
+            }
             read_bytes += current_read;
 
             response += string(buffer);
@@ -94,15 +117,20 @@ class Client
     }
 
 public:
-    Client(string server_info, string program_filename, int iterations, int sleep_time) : program_filename(program_filename),
-                                                                                          iterations(iterations), sleep_time(sleep_time)
+    Client(const char *remote_address, const char *file_name, const char *loop_num, const char *sleep_time, const char *timeout_sec) : program_filename(program_filename),
+                                                                                                                                       n_req(0), n_responses(0), n_succ(0), n_timeout(0), iterations(std::atoi(loop_num)), sleepTime(std::atoi(sleep_time)), timeout(std::atoi(timeout_sec))
     {
-        int t1 = server_info.find(":");
-        server_ip = server_info.substr(0, t1);
-        string t2 = server_info.substr(t1 + 1);
-        server_port = stoi(t2);
 
-        success = 0;
+        int status;
+        addrinfo hints, *p;
+        std::memset(&hints, 0, sizeof hints);
+        hints.ai_family = AF_UNSPEC;
+        hints.ai_socktype = SOCK_STREAM;
+        parseAddress(remote_address);
+        if ((status = getaddrinfo(serverIp.c_str(), port.c_str(), &hints, &servinfo)) != 0)
+        {
+            throw("getaddrinfo error");
+        }
     };
 
     void display_statistics()
@@ -110,37 +138,35 @@ public:
         double total_rt = 0;
         for (auto x : response_times)
             total_rt += x;
-
-        // double average_rt = total_rt / success;
-
-        // cout << "Average response time := " << average_rt << endl;
-        cout << "Total response time := " << total_rt << endl;
-        cout << "Number of requests sent := " << iterations << endl;
-        cout << "Number of successfull requests := " << success << endl;
+        std::cout << "Number of requests: " << n_responses << std::endl;
+        std::cout << "Successful responses: " << n_succ << std::endl;
+        std::cout << "Timeouts: " << n_timeout << std::endl;
+        std::cout << "Total response time: " << total_rt << std::endl;
     }
 
     void submit()
     {
         for (int i = 0; i < iterations; i++)
         {
-            try{
-            setup_socket();
-            send_file();
-            auto start_time = chrono::high_resolution_clock::now();
-            receive_response();
-            auto end_time = chrono::high_resolution_clock::now();
-            double total_time = chrono::duration_cast<chrono::milliseconds>(end_time - start_time).count();
-            response_times.push_back(total_time);
-            success++;
+            try
+            {
+                setup_socket();
+                send_file();
+                n_req++;
+                auto start_time = chrono::high_resolution_clock::now();
+                receive_response();
+                n_succ++;
+                auto end_time = chrono::high_resolution_clock::now();
+                double total_time = chrono::duration_cast<chrono::milliseconds>(end_time - start_time).count();
+                response_times.push_back(total_time);
             }
-            catch(...){
-                //nothing
+            catch (const char *msg)
+            {
+                cerr << msg << endl;
             }
             close(sockfd);
-            
- 
 
-            sleep(sleep_time);
+            sleep(sleepTime);
         }
 
         display_statistics();
@@ -150,19 +176,15 @@ public:
 int main(int argc, char const *argv[])
 {
     // Process arguments
-    if (argc != 5)
+    if (argc != 6)
     {
-        throw("Usage : ./client <serverip:port> <filetosubmit> <loopNum> <sleepTime> ");
+        throw("Usage : ./client <serverip:port> <filetosubmit> <loopNum> <sleepTime> <timeout>");
         exit(0);
     }
-    string server_info = argv[1];
-    string program_filename = argv[2];
-    int iterations = stoi(argv[3]);
-    int sleep_time = stoi(argv[4]);
 
     try
     {
-        Client client(server_info, program_filename, iterations, sleep_time);
+        Client client(argv[1], argv[2], argv[3], argv[4], argv[5]);
         client.submit();
     }
     catch (const char *msg)
