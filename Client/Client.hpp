@@ -33,7 +33,7 @@ class Client
 
 
 public:
-    Client(const char *remote_address, const char *file_name, const char *loop_num, const char *sleep_time, const char *timeout_sec) ;
+    Client(const char *remote_address, const char *loop_num, const char *sleep_time, const char *timeout_sec) ;
     void submit();
 
 };

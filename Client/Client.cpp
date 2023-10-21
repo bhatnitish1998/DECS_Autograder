@@ -1,7 +1,6 @@
 #include "Client.hpp"
 
-Client::Client(const char *remote_address, const char *file_name, const char *loop_num, const char *sleep_time, const char *timeout_sec) : program_filename(program_filename),
-                                                                                                                                           n_req(0), n_responses(0), n_succ(0), n_timeout(0), iterations(std::atoi(loop_num)), sleepTime(std::atoi(sleep_time)), timeout(std::atoi(timeout_sec))
+Client::Client(const char *remote_address, const char *loop_num, const char *sleep_time, const char *timeout_sec) : n_req(0), n_responses(0), n_succ(0), n_timeout(0), iterations(std::atoi(loop_num)), sleepTime(std::atoi(sleep_time)), timeout(std::atoi(timeout_sec))
 {
     int status;
     addrinfo hints, *p;

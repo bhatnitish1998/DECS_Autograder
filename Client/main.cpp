@@ -7,10 +7,10 @@ int main(int argc, char const *argv[])
     {   // Process arguments
         if (argc != 6)
         {
-            throw("Usage : ./client <serverip:port> <filetosubmit> <loopNum> <sleepTime> <timeout>");
+            throw("Usage : ./client <serverip:port> <loopNum> <sleepTime> <timeout>");
             exit(0);
         }
-        Client client(argv[1], argv[2], argv[3], argv[4], argv[5]);
+        Client client(argv[1], argv[2], argv[3], argv[4]);
         client.submit();
     }
     catch (const char *msg)
