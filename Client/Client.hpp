@@ -20,7 +20,7 @@ class Client
     addrinfo *servinfo;
     std::string program_filename;
     std::string serverIp, port;
-    size_t n_responses, sleepTime, timeout, n_timeout, n_succ, n_req;
+    size_t sleepTime, timeout, n_timeout, n_succ, n_req;
     std::vector<double> response_times;
     std::vector<std::string> test_files;
 

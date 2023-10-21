@@ -1,6 +1,6 @@
 #include "Client.hpp"
 
-Client::Client(const char *remote_address, const char *loop_num, const char *sleep_time, const char *timeout_sec) : n_req(0), n_responses(0), n_succ(0), n_timeout(0), iterations(std::atoi(loop_num)), sleepTime(std::atoi(sleep_time)), timeout(std::atoi(timeout_sec))
+Client::Client(const char *remote_address, const char *loop_num, const char *sleep_time, const char *timeout_sec) : n_req(0), n_succ(0), n_timeout(0), iterations(std::atoi(loop_num)), sleepTime(std::atoi(sleep_time)), timeout(std::atoi(timeout_sec))
 {
     int status;
     addrinfo hints, *p;
@@ -122,7 +122,7 @@ void Client::display_statistics()
     double total_rt = 0;
     for (auto x : response_times)
         total_rt += x;
-    std::cout << "Number of requests: " << n_responses << std::endl;
+    std::cout << "Number of requests: " << n_req << std::endl;
     std::cout << "Successful responses: " << n_succ << std::endl;
     std::cout << "Timeouts: " << n_timeout << std::endl;
     std::cout << "Total response time: " << total_rt << std::endl;
