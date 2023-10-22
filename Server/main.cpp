@@ -19,6 +19,7 @@ int main(int argc, char const *argv[])
     catch (const char *msg)
     {
         std::cerr << msg << std::endl;
+        perror("Error string is:");
     }
 
     return 0;

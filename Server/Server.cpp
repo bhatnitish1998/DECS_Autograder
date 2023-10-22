@@ -30,6 +30,8 @@ void Server::setup_socket()
         close(sockfd);
         throw("server: bind");
     }
+    if (listen(sockfd, backlog) == -1)
+        throw("listen");
 
     freeaddrinfo(servinfo);
 }
