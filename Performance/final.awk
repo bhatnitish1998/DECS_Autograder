@@ -1,3 +1,5 @@
+#!/usr/bin/awk
+
 BEGIN{
 FS=":";
 success=0;
