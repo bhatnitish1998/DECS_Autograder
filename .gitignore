@@ -1,3 +1,4 @@
+
 # Prerequisites
 *.d
 
@@ -34,6 +35,10 @@
 # graphs and reports
 *.png
 
+#vs code configuration files
+*.json
+
 #probable executables for Client-Server project
 client
 server
+performance

@@ -39,6 +39,8 @@ public:
 
         fin >> average_response >> requests >> success >> timeouts;
         fin.close();
+        // once done reading remove file
+        remove("global_data.txt");
 
         std::cout << "Number of clients = " << num_of_clients << std::endl;
         std::cout << "Throughput = " << (success / total_time) * 1000 << std::endl;
