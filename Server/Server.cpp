@@ -4,7 +4,9 @@ Server::Server(const char *port,const char *pool_size) : port(std::stoi(port)),p
 {
     backlog = 5;
     setup_threadpool();
+    std::thread(&Server::begin_log,this).detach();
     setup_socket();
+
 }
 
 void Server::setup_socket()
@@ -86,6 +88,25 @@ void Server::threadpool_function()
         worker.process_request();
 
     }
+}
+
+// todo: make it noexcept and figure out some other way to handle errors.
+void Server::begin_log()
+{
+    std::ofstream fout("log.txt");
+    if(!fout) throw("cannot open log file");
+
+    while(true)
+    {   
+        sleep(0.5);
+        int current_queue_size =0;
+        {
+            std::unique_lock<std::mutex> (queue_mutex);
+            current_queue_size = request_queue.size();
+        }
+        fout<<current_queue_size<<std::endl;
+    }
+    fout.close();
 }
 
 

@@ -12,6 +12,7 @@
 #include <queue>
 #include <mutex>
 #include <condition_variable>
+#include <fstream>
 
 class Server
 {
@@ -31,6 +32,7 @@ class Server
     // void thread_function(int newsockfd);
     void threadpool_function();
     void setup_threadpool();
+    void begin_log();
 
 public:
     Server(const char *port,const char *pool_size);
