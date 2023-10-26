@@ -1,7 +1,7 @@
 #!/bin/bash
 
 INTERVAL=10
-ITERATION=5
+ITERATION=20
 SLEEP=1
 TIMEOUT=0.1
 
@@ -48,4 +48,5 @@ rm -f graph_in.txt
 rm -f success.txt
 rm -f request.txt
 rm -f error.txt
+rm -f timeout.txt
 

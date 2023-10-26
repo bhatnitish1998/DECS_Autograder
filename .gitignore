@@ -31,6 +31,9 @@
 *.out
 *.app
 
-load*
-grading*
-m*
+# graphs and reports
+*.png
+
+#probable executables for Client-Server project
+client
+server

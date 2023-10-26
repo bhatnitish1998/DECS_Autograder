@@ -2,13 +2,13 @@
 using namespace std;
 int main(int argc, char const *argv[])
 {
-	for (int i =1 ;i<100000000;i++)
-    {
-        if (i == 5)
-        {
-            // just increasing time
-        }
-    }
+	// for (int i =1 ;i<100000000;i++)
+    // {
+    //     if (i == 5)
+    //     {
+    //         // just increasing time
+    //     }
+    // }
 	
     for (int i =1 ; i<=10; i++)
         cout<<i<<" ";
