@@ -1,8 +1,9 @@
 #include "Server.hpp"
 
-Server::Server(const char *port) : port(std::stoi(port))
+Server::Server(const char *port,const char *pool_size) : port(std::stoi(port)),pool_size(std::stoi(pool_size))
 {
     backlog = 5;
+    setup_threadpool();
     setup_socket();
 }
 
@@ -32,8 +33,15 @@ void Server::setup_socket()
     }
     if (listen(sockfd, backlog) == -1)
         throw("listen");
+    
 
     freeaddrinfo(servinfo);
+}
+
+void Server::setup_threadpool()
+{
+    for(int i =0;i<pool_size;i++)
+        thread_pool.push_back(std::thread(&Server::threadpool_function,this));
 }
 
 void Server::accept_requests()
@@ -45,12 +53,39 @@ void Server::accept_requests()
     if (newsockfd < 0)
         throw("Error accepting connection");
 
-    std::thread(&Server::thread_function, this, newsockfd).detach();
+    //block important for unlocking mutex when out of scope.
+    {
+        std::unique_lock<std::mutex> lock(queue_mutex);
+        request_queue.push(newsockfd);
+    }
+    queue_cond.notify_one();
+    
+    // std::thread(&Server::thread_function, this, newsockfd).detach();
 }
 
-void Server::thread_function(int newsockfd)
+// void Server::thread_function(int newsockfd)
+// {
+//     Worker worker(newsockfd);
+//     // cout << "TID: " << this_thread::get_id() << endl;
+//     worker.process_request();
+// }
+
+void Server::threadpool_function()
 {
-    Worker worker(newsockfd);
-    // cout << "TID: " << this_thread::get_id() << endl;
-    worker.process_request();
+    while (true)
+    {
+        int work_sockfd;
+        {
+            std::unique_lock<std::mutex> lock(queue_mutex);
+            queue_cond.wait(lock,[this](){return !request_queue.empty();});
+            work_sockfd = request_queue.front();
+            request_queue.pop();
+        }
+
+        Worker worker(work_sockfd);
+        worker.process_request();
+
+    }
 }
+
+
