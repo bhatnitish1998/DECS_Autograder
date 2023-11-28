@@ -21,14 +21,14 @@ class ResponseServer
     sockaddr_in client_addr;
     socklen_t sin_size;
     int backlog;
-    std::vector<std::thread> thread_pool;
+    std::vector<std::thread> status_thread_pool;
     std::queue<int> status_queue;
     int pool_size;
-    std::mutex queue_mutex;
-    std::condition_variable queue_cond;
+    std::mutex status_queue_mutex;
+    std::condition_variable status_queue_cond;
 
     void setup_socket();
-    void threadpool_function();
+    void statuspool_function();
     void setup_threadpool();
     void begin_log();
 
