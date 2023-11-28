@@ -3,7 +3,7 @@
 mutex global_mutex;
 vector<double> global_data;
 
-LoadTester::LoadTester(const char * server_info) :server_info(server_info){}
+LoadTester::LoadTester(const char * server_info, int version) :server_info(server_info),version(version){}
 
 void LoadTester::run_client() {
     Client client = Client(server_info.c_str(), LOOPNUM, SLEEP, TIMEOUT);
@@ -21,7 +21,7 @@ void LoadTester::run_test() {
 
     std::vector<std::thread> threads;
 
-    ofstream fout("../Graphs_and_Logs/ver3.txt");
+    ofstream fout("../Graphs_and_Logs/ver_"+ to_string(version)+".txt");
     fout<<"clients,requests,success,timeout,error,avg_rt,throughput\n";
 
     for (int i = INITIAL; i<=(TIMES*INTERVAL);i= i + INTERVAL)

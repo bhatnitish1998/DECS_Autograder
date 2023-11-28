@@ -25,10 +25,11 @@ extern vector<double> global_data;
 
 class LoadTester {
     string server_info;
+    int version;
     void run_client ();
 
 public:
-    LoadTester(const char * server_info);
+    LoadTester(const char * server_info, int version);
     void run_test();
 };
 
