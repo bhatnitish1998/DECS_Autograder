@@ -138,7 +138,7 @@ std::vector<double> Client::get_statistics() {
     data.push_back(n_req);
     data.push_back(n_succ);
     data.push_back(n_timeout);
-    data.push_back(n_req-n_succ-n_timeout);
+    data.push_back(n_req-(n_succ+n_timeout);
     data.push_back(total_rt);
 
     return data;

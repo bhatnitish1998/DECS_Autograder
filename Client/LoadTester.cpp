@@ -22,7 +22,7 @@ void LoadTester::run_test() {
     std::vector<std::thread> threads;
 
     ofstream fout("../Graphs_and_Logs/ver_"+ to_string(version)+".txt");
-    fout<<"clients,requests,success,timeout,error,avg_rt,throughput\n";
+    fout<<"clients,requests,success_percent,timeout_percent,error_percent,avg_rt,throughput\n";
 
     for (int i = INITIAL; i<=(TIMES*INTERVAL);i= i + INTERVAL)
     {
@@ -38,8 +38,9 @@ void LoadTester::run_test() {
 
         fout<<i<<","; //clients
         fout << global_data[0] << ","; // Requests
-        fout << global_data[1] << ","; // Successes
-        fout << global_data[3] << ","; // Timeouts
+        fout << (global_data[1]/global_data[0])*100 << ","; // Successes
+        fout << (global_data[2]/global_data[0])*100 << ","; // Timeouts
+        fout << (global_data[3]/global_data[0])*100 << ","; // other errors
         fout << global_data[4]/global_data[1] << ","; // average response time
         fout << (global_data[1]/time_elapsed)*1000; // throughput
         fout<<endl;
