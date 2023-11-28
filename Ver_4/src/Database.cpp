@@ -1,4 +1,5 @@
-#include "headers/Database.hpp"
+#include "Database.hpp"
+
 /// @brief Init connection to database in pqxx connection object
 Database::Database(/* args */)
     : conn("postgresql://cs744:cs744@localhost:5432/grad?connect_timeout=10")

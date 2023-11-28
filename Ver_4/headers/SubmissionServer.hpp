@@ -26,11 +26,11 @@ class SubmissionServer
     std::vector<std::thread> submit_thread_pool;
     std::vector<std::thread> grader_thread_pool;
 
-    std::queue<int> request_queue;
-    std::queue<int> grader_queue;
+    std::queue<int> submission_queue;
+    std::queue<uint32_t> grader_queue;
 
-    std::mutex request_queue_mutex;
-    std::condition_variable request_queue_cond;
+    std::mutex submission_queue_mutex;
+    std::condition_variable submission_queue_cond;
     std::mutex grader_queue_mutex;
     std::condition_variable grader_queue_cond;
 

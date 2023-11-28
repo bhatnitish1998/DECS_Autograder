@@ -13,17 +13,18 @@
 #include <filesystem>
 #include <vector>
 #include <thread>
-
+#include "Database.hpp"
 extern uint32_t request_id;
 extern std::mutex id_lock;
 
 class Worker
 {
 protected:
+    Database db;
     std::string file_identifier;
     std::string program_file;
     std::string msg;
-    bool done;
+
     std::vector<std::string> cleanuplist;
 
     void cleanup();
@@ -32,6 +33,7 @@ protected:
 
 public:
     Worker();
+    ~Worker();
     virtual uint32_t work() = 0;
 };
 
@@ -44,29 +46,40 @@ class SubmissionWorker : public Worker
 
 public:
     SubmissionWorker(int sockfd);
+    ~SubmissionWorker();
     uint32_t work() override;
 };
 class GradingWorker : public Worker
 {
     uint32_t req_id;
+    std::string executable_file;
+    std::string output_file;
     void compile();
     void run_program();
     void compare_output();
-    void fetchDB();
-    void updateDB();
+    int fetchDB();
+    Request req;
+    bool done;
 
 public:
     GradingWorker(uint32_t request_id);
+    ~GradingWorker();
     uint32_t work() override;
 };
 
 class ResponseWorker : public Worker
 {
     uint32_t req_id;
+    int sock_fd;
     void fetchDB();
+    uint32_t findQueuePos();
+    uint32_t getWaitTime();
+    void recv_req_id();
+    Request req;
 
 public:
-    ResponseWorker(int sockfd, uint32_t request_id);
+    ResponseWorker(int sockfd);
+    ~ResponseWorker();
     uint32_t work() override;
 };
 

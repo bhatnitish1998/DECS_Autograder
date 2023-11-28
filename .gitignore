@@ -37,11 +37,13 @@
 #vs code configuration files
 *.json
 
+old
 #probable executables for Client-Server project
+bin/
 client
 server
 performance
 main
-DECS_Autograder
+# libraries
 lib
 pqxx
