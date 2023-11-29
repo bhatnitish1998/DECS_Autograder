@@ -40,6 +40,7 @@ class Worker
 public:
     Worker(int newsockfd);
     double process_request();
+    ~Worker();
 };
 
 #endif

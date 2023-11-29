@@ -15,6 +15,7 @@
 #include <fstream>
 #include <fcntl.h>
 #include <arpa/inet.h>
+#include<exception>
 
 #define CONTROL_PORT 5001
 

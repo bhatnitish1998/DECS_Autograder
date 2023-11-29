@@ -25,21 +25,21 @@ void Server::setup_socket()
         exit(1);
     }
     if ((sockfd = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol)) == -1)
-        throw("server: socket");
+        throw std::runtime_error("server: socket");
     int yes = 1;
     if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,
                    sizeof(int)) == -1)
     {
-        throw("setsockopt failed");
+        throw std::runtime_error("setsockopt failed");
     }
     // Bind socket
     if (bind(sockfd, servinfo->ai_addr, servinfo->ai_addrlen) == -1)
     {
         close(sockfd);
-        throw("server: bind");
+        throw std::runtime_error("server: bind");
     }
     if (listen(sockfd, backlog) == -1)
-        throw("listen");
+        throw std::runtime_error("listen");
 
     for (p = servinfo; p != nullptr; p = p->ai_next)
     {
@@ -69,7 +69,7 @@ void Server::accept_requests()
 
     int newsockfd = accept(sockfd, (sockaddr *)&client_addr, &client_length);
     if (newsockfd < 0)
-        throw("Error accepting connection");
+        throw std::runtime_error("Error accepting connection");
 
     // block for mutex
     {
@@ -108,7 +108,7 @@ void Server::setup_control()
     sockaddr_in control_addr;
     control_sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (control_sockfd < 0)
-        throw("Error opening socket");
+        throw std::runtime_error("Error opening socket");
 
     memset(&control_addr, 0, sizeof(control_addr));
     control_addr.sin_family = AF_INET;
@@ -117,7 +117,7 @@ void Server::setup_control()
 
     int sc = bind(control_sockfd, (sockaddr *)&control_addr, sizeof(control_addr));
     if (sc < 0)
-        throw("Error while binding");
+        throw std::runtime_error("Error while binding");
 
     listen(control_sockfd, 1);
     std::cerr << "Control channel at " << control_addr.sin_addr.s_addr << ":" << CONTROL_PORT << std::endl;
@@ -128,15 +128,15 @@ void Server::setup_control()
     new_control_sockfd = accept(control_sockfd, (sockaddr *)&loadtester_addr, &loadtester_length);
     std::cerr << "Connected\n";
     if (new_control_sockfd < 0)
-        throw("Error accepting connection");
+        throw std::runtime_error("Error accepting connection");
 
     // set nonblocking
     int flags = fcntl(new_control_sockfd, F_GETFL, 0);
     if (flags < 0)
-        throw("Error getting flags");
+        throw std::runtime_error("Error getting flags");
 
     if (fcntl(new_control_sockfd, F_SETFL, flags | O_NONBLOCK) < 0)
-        throw("Error setting flags");
+        throw std::runtime_error("Error setting flags");
 }
 
 uint32_t Server::receive_long()

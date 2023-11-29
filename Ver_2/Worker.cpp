@@ -44,10 +44,10 @@ void Worker ::send_response()
         length_to_send = htonl(length_to_send);
 
         if (write(newsockfd, &length_to_send, sizeof(length_to_send)) < 0)
-            throw("error sending message size");
+            throw std::runtime_error("error sending message size");
 
         if (write(newsockfd, msg.c_str(), msg.length()) < 0)
-            throw("error sending message");
+            throw std::runtime_error("error sending message");
 
         return;
     }
@@ -56,10 +56,10 @@ void Worker ::send_response()
     uint32_t length_to_send = htonl(response_size);
 
     if (write(newsockfd, &length_to_send, sizeof(length_to_send)) < 0)
-        throw("error sending filesize");
+        throw std::runtime_error("error sending filesize");
 
     if (write(newsockfd, msg.c_str(), msg.length()) < 0)
-        throw("error sending message");
+        throw std::runtime_error("error sending message");
 
     std::ifstream fin(file_to_send, std::ios::binary);
     if (!fin)
@@ -73,7 +73,7 @@ void Worker ::send_response()
         int k = fin.gcount();
         int n = write(newsockfd, buffer, k);
         if (n < 0)
-            throw("error writing file");
+            throw std::runtime_error("error writing file");
     }
 }
 
@@ -81,12 +81,12 @@ void Worker::receive_file()
 {
     uint32_t file_size;
     if (read(newsockfd, &file_size, sizeof(file_size)) < 0)
-        throw("file size read error");
+        throw std::runtime_error("file size read error");
     file_size = ntohl(file_size);
 
     std::ofstream fout(program_file.c_str(), std::ios::binary);
     if (!fout)
-        throw("error opening program file");
+        throw std::runtime_error("error opening program file");
 
     char buffer[1024];
     uint32_t read_bytes = 0;
@@ -95,10 +95,10 @@ void Worker::receive_file()
         memset(buffer, 0, sizeof(buffer));
         uint32_t current_read = read(newsockfd, buffer, sizeof(buffer));
         if (current_read == 0)
-            throw("socket read error");
+            throw std::runtime_error("socket read error");
         fout.write(buffer, current_read);
         if (fout.bad())
-            throw("file write error");
+            throw std::runtime_error("file write error");
         read_bytes += current_read;
     }
     fout.close();
