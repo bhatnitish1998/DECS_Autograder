@@ -1,6 +1,6 @@
 #ifndef __DB_hpp__
 #define __DB_hpp__ 1
-#include "pqxx/pqxx"
+#include <pqxx/pqxx>
 #include <exception>
 #include <iostream>
 #include <random>
