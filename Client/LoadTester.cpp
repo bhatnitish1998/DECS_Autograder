@@ -3,21 +3,32 @@
 mutex global_mutex;
 vector<double> global_data;
 
-LoadTester::LoadTester(const char * server_info, int version) :server_info(server_info),version(version){
-    control_sockfd =0;
+LoadTester::LoadTester(const char * server_info, int version, const char * response_server) :server_info(server_info),version(version),response_server(response_server){
     control_sockfd =0;
     establish_control_connection();
 }
 
 void LoadTester::run_client() {
-    Client client = Client(server_info.c_str(), LOOPNUM, SLEEP, TIMEOUT,PROGRAMFILE);
-    client.submit();
-    vector<double> data = client.get_statistics();
+    vector<double> data;
+    if(version == 4)
+    {
+        AsyncClient client = AsyncClient(server_info.c_str(),response_server.c_str(),LOOPNUM,TIMEOUT);
+        client.submit(PROGRAMFILE);
+        data = client.get_statistics();
+    }
+    else
+    {
+        Client client = Client(server_info.c_str(), LOOPNUM, SLEEP, TIMEOUT,PROGRAMFILE);
+        client.submit();
+        data = client.get_statistics();
+    }
     {
         unique_lock<mutex> lock(global_mutex);
         for (int i = 0; i < 5; i++) {
             global_data[i] += data[i];
+
         }
+        if(version ==4) global_data[5]+=data[5];
     }
 }
 
@@ -54,7 +65,10 @@ void LoadTester::run_test() {
     std::vector<std::thread> threads;
 
     ofstream fout("../Graphs_and_Logs/ver_"+ to_string(version)+".txt");
-    fout<<"clients,requests,success_percent,timeout_percent,error_percent,avg_rt,throughput\n";
+    fout<<"clients,requests,success_percent,timeout_percent,error_percent,avg_rt,throughput";
+    if(version ==4)
+        fout<<",avg_rt_2";
+    fout<<endl;
 
     for (uint32_t i = INITIAL; i<=(TIMES*INTERVAL);i= i + INTERVAL)
     {
@@ -79,12 +93,14 @@ void LoadTester::run_test() {
         fout << (global_data[3]/global_data[0])*100 << ","; // other error percent
         fout << global_data[4]/global_data[1] << ","; // average response time
         fout << (global_data[1]/time_elapsed)*1000; // throughput
+        if(version ==4) fout<<","<<global_data[5]/global_data[0];
         fout<<endl;
 
         // reset data for next iteration
         for(int k =0;k<5;k++) {
             global_data[k]=0;
         }
+        if(version ==4) global_data[5]=0;
     }
     fout.close();
     uint32_t i = 100000;
