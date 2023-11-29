@@ -10,7 +10,7 @@ LoadTester::LoadTester(const char * server_info, int version) :server_info(serve
 }
 
 void LoadTester::run_client() {
-    Client client = Client(server_info.c_str(), LOOPNUM, SLEEP, TIMEOUT);
+    Client client = Client(server_info.c_str(), LOOPNUM, SLEEP, TIMEOUT,PROGRAMFILE);
     client.submit();
     vector<double> data = client.get_statistics();
     {

@@ -65,7 +65,11 @@ void Server::accept_requests()
  void Server::thread_function(int newsockfd)
  {
      Worker worker(newsockfd);
-     worker.process_request();
+     double temp_st = worker.process_request();
+     {
+         std::unique_lock <std::mutex> lock(service_mutex);
+         service_time = temp_st;
+     }
  }
 
 void Server::setup_control() {
