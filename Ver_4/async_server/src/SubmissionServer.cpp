@@ -6,6 +6,13 @@ void SubmissionServer::setup_control()
     control_sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (control_sockfd < 0)
         throw std::runtime_error("Error opening socket");
+    int yes = 1;
+    if (setsockopt(control_sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,
+                   sizeof(int)) == -1)
+    {
+        throw std::runtime_error("setsockopt failed");
+    }
+
 
     memset(&control_addr, 0, sizeof(control_addr));
     control_addr.sin_family = AF_INET;
