@@ -19,9 +19,6 @@ AsyncClient::AsyncClient(const char *submission_remote_address, const char *resp
         throw("getaddrinfo error");
     }
 
-    std::string path = "input/";
-    for (const auto &file : std::filesystem::directory_iterator(path))
-        test_files.push_back(file.path());
 }
 
 void AsyncClient::send_file()
@@ -43,7 +40,6 @@ void AsyncClient::send_file()
         memset(buffer, 0, sizeof(buffer));
         fin.read(buffer, sizeof(buffer));
         int k = fin.gcount();
-        // todo: handle if kernel fails to send the data
         int n = write(submission_sockfd, buffer, k);
         if (n < 0)
             throw("error writing file");

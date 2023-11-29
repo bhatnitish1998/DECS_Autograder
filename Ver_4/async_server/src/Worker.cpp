@@ -218,7 +218,7 @@ void GradingWorker::run_program()
 void GradingWorker::compare_output()
 {
     std::string diff_filename = file_identifier + "diff.txt";
-    std::string cmd = "diff -Z " + output_file + " ../../Test_files/solution.txt > " + diff_filename;
+    std::string cmd = "diff -Z " + output_file + " ../../../Test_files/solution.txt > " + diff_filename;
 
     if (system(cmd.c_str()) != 0)
     {

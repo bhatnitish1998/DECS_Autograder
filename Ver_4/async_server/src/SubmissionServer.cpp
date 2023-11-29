@@ -49,7 +49,7 @@ uint32_t SubmissionServer::receive_long()
 void SubmissionServer::control_thread_function()
 {
     setup_control();
-    std::ofstream fout("../Graphs_and_Logs/ver3_server.txt");
+    std::ofstream fout("../../../Graphs_and_Logs/ver4_server.txt");
     fout << "cpu,threads,queue,service_time" << std::endl;
     uint32_t number_of_clients = 0;
 
@@ -282,6 +282,11 @@ void SubmissionServer::gradingPoolFunction()
         }
 
         GradingWorker worker(work_req_id);
-        worker.work();
+        double temp_st = worker.work();
+        {
+            std::unique_lock<std::mutex> lock(service_mutex);
+            service_time = temp_st;
+        }
+
     }
 }
