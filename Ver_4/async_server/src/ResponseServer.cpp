@@ -1,4 +1,5 @@
 #include "ResponseServer.hpp"
+#include <exception>
 /// @brief Response server is created with a given thread pool size and listens on given port
 /// @param port Port to bind to
 /// @param pool_size Thread pool size
@@ -24,7 +25,7 @@ void ResponseServer::accept_requests()
 
     int newsockfd = accept(sockfd, (sockaddr *)&client_addr, &client_length);
     if (newsockfd < 0)
-        throw("Error accepting connection");
+        throw std::runtime_error("Error accepting connection");
 
     // block important for unlocking mutex when out of scope.
     {
@@ -50,22 +51,22 @@ void ResponseServer::setup_socket()
         exit(1);
     }
     if ((sockfd = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol)) == -1)
-        throw("server: socket");
+        throw std::runtime_error("server: socket");
     int yes = 1;
     if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,
                    sizeof(int)) == -1)
     {
-        throw("setsockopt failed");
+        throw std::runtime_error("setsockopt failed");
     }
     // Bind socket
     if (bind(sockfd, servinfo->ai_addr, servinfo->ai_addrlen) == -1)
     {
         close(sockfd);
-        throw("server: bind");
+        throw std::runtime_error("server: bind");
     }
 
     if (listen(sockfd, backlog) == -1)
-        throw("listen");
+        throw std::runtime_error("listen");
     for (p = servinfo; p != nullptr; p = p->ai_next)
     {
         if (p->ai_family == AF_INET)

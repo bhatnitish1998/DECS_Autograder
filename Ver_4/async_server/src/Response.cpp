@@ -16,10 +16,10 @@ int main(int argc, char const *argv[])
         while (1)
             myserver.accept_requests();
     }
-    catch (const char *msg)
+    catch (const std::exception &e)
     {
         perror("Error string is:");
-        std::cerr << msg << std::endl;
+        std::cerr << e.what() << std::endl;
     }
 
     return 0;
