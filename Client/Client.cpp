@@ -67,10 +67,11 @@ void Client::receive_response()
         current_read = 0;
         memset(buffer, 0, sizeof(buffer));
         current_read = read(sockfd, buffer, sizeof(buffer));
-        if (current_read < 0)
+        if (current_read == 0)
         {
-            if (errno == EWOULDBLOCK)
+            if (errno == EWOULDBLOCK || errno == EAGAIN)
                 n_timeout++;
+            break;
         }
         read_bytes += current_read;
         response += std::string(buffer);
