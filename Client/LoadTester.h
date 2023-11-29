@@ -2,6 +2,7 @@
 #define DECS_AUTOGRADER_LOADTESTER_H
 
 #include "Client.hpp"
+#include "AsyncClient.hpp"
 #include <mutex>
 #include <thread>
 #include <fstream>
@@ -31,6 +32,7 @@ extern vector<double> global_data;
 
 class LoadTester {
     string server_info;
+    string response_server;
     int version;
     int control_sockfd;
 
@@ -39,7 +41,7 @@ class LoadTester {
     void send_long (uint32_t value);
 
 public:
-    LoadTester(const char * server_info, int version);
+    LoadTester(const char * server_info, int version, const char * response_server);
     void run_test();
 };
 

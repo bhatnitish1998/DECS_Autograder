@@ -4,7 +4,8 @@
 1. make
 2. Start the version of the server to test
 3. ./LoadTester \<server ip:port\> \<version number\>
-4. Log files will be generated in Graphs_and_Logs directory with all the required metrics
+4. If version = 4  LoadTester takes another argument \<response server ip:port\>
+5. Log files will be generated in Graphs_and_Logs directory with all the required metrics
 
 
 #### Note: 

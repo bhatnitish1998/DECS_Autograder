@@ -130,7 +130,7 @@ void Client::display_statistics()
     std::cout << "Total response time: " << total_rt << std::endl;
 }
 
-// return vector [requests, successes, timeouts, error, total response time]
+// return vector [requests, successes, timeouts, error, total response time,total response time 2]
 std::vector<double> Client::get_statistics() {
     std::vector<double> data;
 
