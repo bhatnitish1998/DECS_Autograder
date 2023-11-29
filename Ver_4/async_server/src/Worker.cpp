@@ -112,6 +112,8 @@ GradingWorker::GradingWorker(uint32_t request_id)
     // Request present in DB
     if (fetchDB() == 0)
     {
+        Database db;
+        db.updateReqStatus(req_id, "PROCESSING");
         std::string directoryPath = "temp";
 
         // Check if the temp directory exists
@@ -259,7 +261,7 @@ uint32_t ResponseWorker::findQueuePos()
 
 uint32_t ResponseWorker::getWaitTime()
 {
-    return 240;
+    return 2;
 }
 
 uint32_t ResponseWorker::work()
@@ -274,6 +276,11 @@ uint32_t ResponseWorker::work()
     {
         auto queue_pos = findQueuePos();
         msg = "Your grading request ID: <" + std::to_string(req_id) + "> has been accepted.It is currently at position " + std::to_string(queue_pos) + "\nApprox wait time(seconds):" + std::to_string(queue_pos * getWaitTime());
+        send_response(sock_fd, msg);
+    }
+    else if (req.request_status == "PROCESSING")
+    {
+        msg = "Your grading request ID: <" + std::to_string(req_id) + "> has been accepted and is currently being processed.";
         send_response(sock_fd, msg);
     }
     else if (req.request_status == "GRADED")

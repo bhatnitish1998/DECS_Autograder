@@ -12,7 +12,9 @@
 #include <mutex>
 #include <condition_variable>
 #include <fstream>
+#include <fcntl.h>
 #include <arpa/inet.h>
+#define CONTROL_PORT 5001
 /// @brief Class representing the submission server
 class SubmissionServer
 {
@@ -42,9 +44,20 @@ class SubmissionServer
     void init_submissionPool();
     void init_gradingPool();
     void setup_threadpools();
-    void begin_log();
-
     void recoverGradingQueue();
+
+    // Performance collection stuff
+    int control_sockfd;
+    int new_control_sockfd;
+    double service_time;
+    std::mutex service_mutex;
+
+    void setup_control();
+    uint32_t receive_long();
+    void control_thread_function();
+    double get_cpu_utilization();
+    int get_threads();
+    void log_data(std::ofstream &);
 
 public:
     SubmissionServer(const char *port, const char *pool_size);
