@@ -1,5 +1,5 @@
 #include "SubmissionServer.hpp"
-FastQueue grader_queue;
+
 void SubmissionServer::setup_control()
 {
     sockaddr_in control_addr;

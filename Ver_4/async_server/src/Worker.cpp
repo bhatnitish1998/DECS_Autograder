@@ -1,6 +1,6 @@
 #include "Worker.hpp"
 // Unused Destructor
-FastQueue grader_queue;
+
 GradingWorker::~GradingWorker()
 {
 }
@@ -70,8 +70,6 @@ uint32_t SubmissionWorker::work()
     std::regex pattern(" system\\(");
     if (!std::regex_search(program_file, pattern))
     {
-        //  generate request id
-        // gen_id();
         //  create entry in db with this id
         auto id = db.insertRequest(program_file);
         req_id = id;
@@ -274,8 +272,7 @@ void ResponseWorker::work()
     }
     else if (req.request_status == "QUEUED")
     {
-        auto queue_pos = grader_queue.get_index(req.req_id);
-        msg = "Your grading request ID: <" + std::to_string(req_id) + "> has been accepted.It is currently at position " + std::to_string(queue_pos) + "\nApprox wait time(seconds):" + std::to_string(queue_pos * getWaitTime());
+        msg = "Your grading request ID: <" + std::to_string(req_id) + "> has been accepted.It is currently queued.";
         send_response(sock_fd, msg);
     }
     else if (req.request_status == "PROCESSING")

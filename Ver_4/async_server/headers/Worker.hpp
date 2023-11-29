@@ -16,8 +16,7 @@
 #include "Database.hpp"
 #include <regex>
 #include <chrono>
-#include "FastQueue.h"
-extern FastQueue grader_queue;
+
 class SubmissionWorker
 {
     Database db;
