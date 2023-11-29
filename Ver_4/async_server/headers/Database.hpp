@@ -4,6 +4,8 @@
 #include <exception>
 #include <iostream>
 #include <random>
+#include <vector>
+
 struct Request
 {
     uint32_t req_id;
@@ -17,9 +19,11 @@ class Database
 private:
     pqxx::connection conn;
     Request request;
+    std::vector<uint32_t> pendingTasks;
 
 public:
     void deleteAll();
+    std::vector<uint32_t> getPendingTasks();
     void showAll();
     void show(uint32_t req_id);
     uint32_t insertRequest(const Request &req);

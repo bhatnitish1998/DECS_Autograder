@@ -4,7 +4,11 @@ SubmissionServer::SubmissionServer(const char *port, const char *pool_size)
       pool_size(std::stoi(pool_size)),
       backlog(5)
 {
+    // Recover queue in the event of server crash
+    recoverGradingQueue();
+    // Setup both threadpools
     setup_threadpools();
+    // Setup connection socket
     setup_socket();
 }
 
@@ -42,7 +46,12 @@ void SubmissionServer::setup_socket()
     }
     if ((sockfd = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol)) == -1)
         throw("server: socket");
-
+    int yes = 1;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,
+                   sizeof(int)) == -1)
+    {
+        throw("setsockopt failed");
+    }
     // Bind socket
     if (bind(sockfd, servinfo->ai_addr, servinfo->ai_addrlen) == -1)
     {
@@ -73,6 +82,16 @@ void SubmissionServer::setup_threadpools()
     init_gradingPool();
 }
 
+void SubmissionServer::recoverGradingQueue()
+{
+    Database db;
+    std::vector<uint32_t> tasks = db.getPendingTasks();
+    for (auto id : tasks)
+    {
+        grader_queue.push(id);
+    }
+}
+
 void SubmissionServer::init_submissionPool()
 {
     for (int i = 0; i < pool_size; i++)
@@ -87,10 +106,11 @@ void SubmissionServer::init_gradingPool()
 
 void SubmissionServer::submissionPoolFunction()
 {
+    Database db;
     while (true)
     {
         int work_sockfd;
-        Database db;
+
         {
             std::unique_lock<std::mutex> lock(submission_queue_mutex);
             submission_queue_cond.wait(lock, [this]()

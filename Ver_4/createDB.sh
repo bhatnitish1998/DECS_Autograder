@@ -1,8 +1,48 @@
 #!/bin/bash
+# Script to create a PostgreSQL database and setup libpqxx
+# Function to display usage information
+function display_usage {
+    echo "Usage: $0 [-i]"
+    echo "Options:"
+    echo "  -i    Download and build libpqxx"
+    exit 1
+}
 
-# Script to create a PostgreSQL database
+# Default values
+BUILD_LIBPQXX=false
+
+# Process command-line options
+while getopts ":i" opt; do
+    case $opt in
+    i)
+        BUILD_LIBPQXX=true
+        ;;
+    \?)
+        echo "Invalid option: -$OPTARG"
+        display_usage
+        ;;
+    :)
+        echo "Option -$OPTARG requires an argument."
+        display_usage
+        ;;
+    esac
+done
+
 # TODO: Add libpqxx installation
+# Download and build libpqxx if the -i option is specified
+if [ "$BUILD_LIBPQXX" = true ]; then
+    sudo apt-get install libpq-dev
+    git clone https://github.com/jtv/libpqxx.git
+    cd libpqxx
+    ./configure --disable-shared
+    make
+    sudo make install
+    cd ..
+    #rm -rf libpqxx
+fi
+
 # Define PostgreSQL user and database details
+
 DB_NAME="grad"
 DB_USER="cs744"
 DB_PASSWORD="cs744"
@@ -30,3 +70,5 @@ sudo -u postgres psql -c " GRANT ALL PRIVILEGES ON $TABLE_NAME TO $DB_USER;"
 
 # Connect to the database and create a table
 sudo -u postgres psql -d $DB_NAME -c "CREATE TABLE $TABLE_NAME ($TABLE_COLUMNS);"
+
+#!/bin/bash

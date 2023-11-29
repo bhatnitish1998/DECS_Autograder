@@ -13,7 +13,7 @@
 #include <condition_variable>
 #include <fstream>
 #include <arpa/inet.h>
-
+/// @brief Class representing the submission server
 class SubmissionServer
 {
     int port;
@@ -43,6 +43,8 @@ class SubmissionServer
     void init_gradingPool();
     void setup_threadpools();
     void begin_log();
+
+    void recoverGradingQueue();
 
 public:
     SubmissionServer(const char *port, const char *pool_size);

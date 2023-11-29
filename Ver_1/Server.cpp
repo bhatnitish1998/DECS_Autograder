@@ -3,8 +3,8 @@
 Server::Server(const char *port) : port(std::stoi(port))
 {
     backlog = 5;
-    service_time=0;
-    std::thread(&Server::control_thread_function,this).detach();
+    service_time = 0;
+    std::thread(&Server::control_thread_function, this).detach();
     setup_socket();
 }
 
@@ -25,7 +25,12 @@ void Server::setup_socket()
     }
     if ((sockfd = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol)) == -1)
         throw("server: socket");
-
+    int yes = 1;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,
+                   sizeof(int)) == -1)
+    {
+        throw("setsockopt failed");
+    }
     // Bind socket
     if (bind(sockfd, servinfo->ai_addr, servinfo->ai_addrlen) == -1)
     {
@@ -63,12 +68,13 @@ void Server::accept_requests()
 
     double temp_st = worker.process_request();
     {
-        std::unique_lock <std::mutex> lock(service_mutex);
+        std::unique_lock<std::mutex> lock(service_mutex);
         service_time = temp_st;
     }
 }
 
-void Server::setup_control() {
+void Server::setup_control()
+{
 
     sockaddr_in control_addr;
     control_sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -91,7 +97,7 @@ void Server::setup_control() {
     socklen_t loadtester_length = sizeof(loadtester_addr);
 
     new_control_sockfd = accept(control_sockfd, (sockaddr *)&loadtester_addr, &loadtester_length);
-    std::cerr<<"Connected\n";
+    std::cerr << "Connected\n";
     if (new_control_sockfd < 0)
         throw("Error accepting connection");
 
@@ -102,13 +108,13 @@ void Server::setup_control() {
 
     if (fcntl(new_control_sockfd, F_SETFL, flags | O_NONBLOCK) < 0)
         throw("Error setting flags");
-
 }
 
-uint32_t  Server::receive_long() {
-    uint32_t  value=0;
-    int n = read(new_control_sockfd, &value, sizeof(value) );
-    if(n > 0)
+uint32_t Server::receive_long()
+{
+    uint32_t value = 0;
+    int n = read(new_control_sockfd, &value, sizeof(value));
+    if (n > 0)
     {
         value = ntohl(value);
         return value;
@@ -116,20 +122,22 @@ uint32_t  Server::receive_long() {
     return value;
 }
 
-void Server::control_thread_function() {
+void Server::control_thread_function()
+{
     setup_control();
     std::ofstream fout("../Graphs_and_Logs/ver1_server.txt");
-    fout<<"cpu,threads,queue,service_time"<<std::endl;
+    fout << "cpu,threads,queue,service_time" << std::endl;
     uint32_t number_of_clients = 0;
 
-    while(true)
+    while (true)
     {
         number_of_clients = receive_long();
 
-        //if received new value
-        if (number_of_clients) {
-            fout<<number_of_clients<<std::endl;
-            if(number_of_clients > 5000)
+        // if received new value
+        if (number_of_clients)
+        {
+            fout << number_of_clients << std::endl;
+            if (number_of_clients > 5000)
             {
                 fout.close();
                 break;
@@ -138,60 +146,66 @@ void Server::control_thread_function() {
 
         // if not received value then write same value.
         log_data(fout);
-        sleep (0.5);
-
+        sleep(0.5);
     }
 }
 
-double Server::get_cpu_utilization() {
-    FILE* top_output = popen("top -bn 1 | grep '%Cpu' | awk '{print $2}'", "r");
-    if (!top_output) {
+double Server::get_cpu_utilization()
+{
+    FILE *top_output = popen("top -bn 1 | grep '%Cpu' | awk '{print $2}'", "r");
+    if (!top_output)
+    {
         return -1.0;
     }
     char buffer[128];
     double cpu_utilization = -1.0;
 
-    if (fgets(buffer, sizeof(buffer), top_output) != nullptr) {
+    if (fgets(buffer, sizeof(buffer), top_output) != nullptr)
+    {
         cpu_utilization = std::stod(buffer);
     }
     pclose(top_output);
     return cpu_utilization;
 }
 
-int Server::get_threads() {
-    FILE* ps_output = popen("ps -T -p $(pgrep 'server') --no-headers | wc -l", "r");
-    if (!ps_output) {
+int Server::get_threads()
+{
+    FILE *ps_output = popen("ps -T -p $(pgrep 'server') --no-headers | wc -l", "r");
+    if (!ps_output)
+    {
         return 0;
     }
     char buffer[128];
     int threads = 0;
 
-    if (fgets(buffer, sizeof(buffer), ps_output) != nullptr) {
-        threads= std::stoi(buffer);
+    if (fgets(buffer, sizeof(buffer), ps_output) != nullptr)
+    {
+        threads = std::stoi(buffer);
     }
     pclose(ps_output);
     return threads;
 }
 
-void Server::log_data(std::ofstream &fout) {
+void Server::log_data(std::ofstream &fout)
+{
     // cpu utilization
     double cpu = get_cpu_utilization();
-    fout<<cpu<<",";
+    fout << cpu << ",";
 
     // number of threads
     int threads = get_threads();
-    fout<<threads<<",";
+    fout << threads << ",";
 
     // current queue size
-    int current_queue_size =0;
-    fout<<current_queue_size<<",";
+    int current_queue_size = 0;
+    fout << current_queue_size << ",";
 
     double temp_st = 0;
     {
         std::unique_lock<std::mutex> lock(service_mutex);
         temp_st = service_time;
     }
-    fout<<temp_st<<",";
+    fout << temp_st << ",";
 
-    fout<<std::endl;
+    fout << std::endl;
 }

@@ -48,13 +48,19 @@ void ResponseServer::setup_socket()
     }
     if ((sockfd = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol)) == -1)
         throw("server: socket");
-
+    int yes = 1;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,
+                   sizeof(int)) == -1)
+    {
+        throw("setsockopt failed");
+    }
     // Bind socket
     if (bind(sockfd, servinfo->ai_addr, servinfo->ai_addrlen) == -1)
     {
         close(sockfd);
         throw("server: bind");
     }
+
     if (listen(sockfd, backlog) == -1)
         throw("listen");
     for (p = servinfo; p != nullptr; p = p->ai_next)

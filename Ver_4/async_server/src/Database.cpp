@@ -26,6 +26,31 @@ void Database::deleteAll()
     txn.exec("DELETE FROM requests;");
     txn.commit();
 }
+/// @brief Query returning pending tasks which are queued. Used for queue recovery
+/// @return list of pending request id
+std::vector<uint32_t> Database::getPendingTasks()
+{
+    try
+    {
+        pendingTasks.clear();
+        pqxx::work txn(conn);
+        std::string sql = "SELECT req_id FROM REQUESTS WHERE request_status = QUEUED;";
+        pqxx::result R(txn.exec(sql));
+
+        /* Append all the request ids */
+        for (pqxx::result::const_iterator c = R.begin(); c != R.end(); ++c)
+        {
+            uint32_t value;
+            c[0].to(value); // cast to uint32_t
+            pendingTasks.push_back(value);
+        }
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << e.what() << '\n';
+    }
+    return pendingTasks;
+}
 /// @brief Print all rows from table
 void Database::showAll()
 {
