@@ -78,7 +78,7 @@ uint32_t SubmissionWorker::work()
         auto id = db.insertRequest(program_file);
         req_id = id;
         //  send request id and acknowledgement to client
-        msg = "File submitted for grading. Your request id: " + std::to_string(req_id);
+        msg = "File submitted for grading. Your request id: <" + std::to_string(req_id) + ">";
     }
     else
     {
@@ -267,18 +267,18 @@ uint32_t ResponseWorker::work()
     req = db.queryFor(req_id);
     if (req.req_id == -1)
     {
-        msg = "Grading request id: " + std::to_string(req_id) + " not found. Please check and resend your request ID or re-send your original grading request\n";
+        msg = "Grading request ID: <" + std::to_string(req_id) + "> not found. Please check and resend your request ID or re-send your original grading request\n";
         send_response(sock_fd, msg);
     }
     else if (req.request_status == "QUEUED")
     {
         auto queue_pos = findQueuePos();
-        msg = "Your grading request ID:" + std::to_string(req_id) + " has been accepted.It is currently at position " + std::to_string(queue_pos) + "\nApprox wait time(seconds):" + std::to_string(queue_pos * getWaitTime());
+        msg = "Your grading request ID: <" + std::to_string(req_id) + "> has been accepted.It is currently at position " + std::to_string(queue_pos) + "\nApprox wait time(seconds):" + std::to_string(queue_pos * getWaitTime());
         send_response(sock_fd, msg);
     }
     else if (req.request_status == "GRADED")
     {
-        msg = "Your grading request ID " + std::to_string(req_id) + " processing is done, here are the results:\n" + req.grading_status + "\n" + req.output;
+        msg = "Your grading request ID: <" + std::to_string(req_id) + "> processing is done, here are the results:\n" + req.grading_status + "\n" + req.output;
         send_response(sock_fd, msg);
     }
     return 0;
