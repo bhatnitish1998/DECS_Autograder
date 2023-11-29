@@ -68,12 +68,23 @@ uint32_t SubmissionWorker::work()
 {
     // receive the file as a string
     receive_file();
-    //  generate request id
-    gen_id();
-    //  create entry in db with this id
-    db.insertRequest(req_id, program_file);
-    //  send request id and acknowledgement to client
-    msg = "File submitted for grading. Your request id: " + std::to_string(req_id);
+    // Check for system() in client code and reject if present
+    std::regex pattern(" system\\(");
+    if (!std::regex_search(program_file, pattern))
+    {
+        //  generate request id
+        // gen_id();
+        //  create entry in db with this id
+        auto id = db.insertRequest(program_file);
+        req_id = id;
+        //  send request id and acknowledgement to client
+        msg = "File submitted for grading. Your request id: " + std::to_string(req_id);
+    }
+    else
+    {
+        //  send request id and acknowledgement to client
+        msg = "Malicious activity detected in submitted program.\n";
+    }
     send_response(newsockfd, msg);
     //  return req id for grading queue
     return req_id;
@@ -127,7 +138,6 @@ GradingWorker::GradingWorker(uint32_t request_id)
 uint32_t GradingWorker::work()
 {
     compile();
-    std::cerr << done;
     if (!done)
         run_program();
     if (!done)
@@ -257,7 +267,7 @@ uint32_t ResponseWorker::work()
     req = db.queryFor(req_id);
     if (req.req_id == -1)
     {
-        msg = "Grading request id: " + std::to_string(req_id) + "not found. Please check and resend your request ID or re-send your original grading request\n";
+        msg = "Grading request id: " + std::to_string(req_id) + " not found. Please check and resend your request ID or re-send your original grading request\n";
         send_response(sock_fd, msg);
     }
     else if (req.request_status == "QUEUED")

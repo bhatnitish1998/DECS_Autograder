@@ -9,6 +9,15 @@ Database::Database(/* args */)
 Database::~Database()
 {
 }
+uint32_t generateRandom32BitUUID()
+{
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<uint32_t> dis;
+
+    return dis(gen);
+}
+
 /// @brief Delete all rows from table
 void Database::deleteAll()
 {
@@ -69,22 +78,36 @@ void Database::show(uint32_t req_id)
 /// @brief Insert a new request to database
 /// @param req Request struct variable
 /// @return 0 on success
-int Database::insertRequest(const Request &req)
+uint32_t Database::insertRequest(const Request &req)
 {
-    try
+    int maxAttempts = 10; // Maximum attempts to avoid an infinite loop
+    int attempts = 0;
+    while (attempts < maxAttempts)
     {
-        pqxx::work txn(conn);
-        std::string sql = " INSERT INTO REQUESTS(REQ_ID, PROGRAM, REQUEST_STATUS, GRADING_STATUS, OUTPUT) \
-        VALUES(" + std::to_string(req.req_id) +
-                          "," + req.program_file + "," + req.request_status + "," + req.grading_status + "," + req.output + ");";
-        txn.exec(sql);
-        txn.commit();
+        auto uuid = generateRandom32BitUUID();
+        attempts++;
+        try
+        {
+            pqxx::work txn(conn);
+            std::string sql = " INSERT INTO REQUESTS(REQ_ID, PROGRAM, REQUEST_STATUS, GRADING_STATUS, OUTPUT) \
+        VALUES(" + std::to_string(uuid) +
+                              "," + req.program_file + "," + req.request_status + "," + req.grading_status + "," + req.output + ");";
+            txn.exec(sql);
+            txn.commit();
+            return uuid;
+        }
+        catch (const pqxx::unique_violation &e)
+        {
+            std::cerr << "Error: " << e.what() << ". Regenerating UUID." << std::endl;
+            continue; // Unique constraint violation, need to regenerate UUID
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << std::endl;
+            return -1;
+        }
     }
-    catch (const std::exception &e)
-    {
-        std::cerr << e.what() << std::endl;
-        return -1;
-    }
+
     return 0;
 }
 /// @brief Insert a new request to database
@@ -94,32 +117,40 @@ int Database::insertRequest(const Request &req)
 /// @param grading_status Grading status (default empty)
 /// @param output Grading output (default empty)
 /// @return 0 on success
-int Database::insertRequest(const uint32_t req_id, const std::string program, const std::string request_status, const std::string grading_status, const std::string output)
+uint32_t Database::insertRequest(const std::string program, const std::string request_status, const std::string grading_status, const std::string output)
 {
-    try
+    int maxAttempts = 10; // Maximum attempts to avoid an infinite loop
+    int attempts = 0;
+    while (attempts < maxAttempts)
     {
-        std::string sql;
-        pqxx::work txn(conn);
-        if (request_status.empty())
+        auto uuid = generateRandom32BitUUID();
+        attempts++;
+        try
         {
-            sql = " INSERT INTO REQUESTS(REQ_ID, PROGRAM, REQUEST_STATUS, GRADING_STATUS, OUTPUT) \
-        VALUES(" + std::to_string(req_id) +
-                  "," + txn.quote(program) + "," + txn.quote("QUEUED") + "," + txn.quote(grading_status) + "," + txn.quote(output) + ");";
-        }
-        else
-        {
-            sql = " INSERT INTO REQUESTS(REQ_ID, PROGRAM, REQUEST_STATUS, GRADING_STATUS, OUTPUT) \
-        VALUES(" + std::to_string(req_id) +
-                  "," + txn.quote(program) + "," + txn.quote(request_status) + "," + txn.quote(grading_status) + "," + txn.quote(output) + ");";
-        }
+            std::string sql;
+            pqxx::work txn(conn);
+            if (request_status.empty())
+            {
+                sql = " INSERT INTO REQUESTS(REQ_ID, PROGRAM, REQUEST_STATUS, GRADING_STATUS, OUTPUT) \
+        VALUES(" + std::to_string(uuid) +
+                      "," + txn.quote(program) + "," + txn.quote("QUEUED") + "," + txn.quote(grading_status) + "," + txn.quote(output) + ");";
+            }
+            else
+            {
+                sql = " INSERT INTO REQUESTS(REQ_ID, PROGRAM, REQUEST_STATUS, GRADING_STATUS, OUTPUT) \
+        VALUES(" + std::to_string(uuid) +
+                      "," + txn.quote(program) + "," + txn.quote(request_status) + "," + txn.quote(grading_status) + "," + txn.quote(output) + ");";
+            }
 
-        txn.exec(sql);
-        txn.commit();
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << e.what() << std::endl;
-        return -1;
+            txn.exec(sql);
+            txn.commit();
+            return uuid;
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << std::endl;
+            return -1;
+        }
     }
     return 0;
 }
@@ -245,7 +276,6 @@ Request Database::queryFor(uint32_t req_id)
         else
         {
             request.req_id = -1;
-            std::cout << "No data found for the given primary key." << std::endl;
         }
     }
     catch (const std::exception &e)

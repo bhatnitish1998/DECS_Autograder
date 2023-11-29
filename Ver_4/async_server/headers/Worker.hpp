@@ -14,6 +14,7 @@
 #include <vector>
 #include <thread>
 #include "Database.hpp"
+#include <regex>
 extern uint32_t request_id;
 extern std::mutex id_lock;
 

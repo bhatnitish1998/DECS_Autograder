@@ -56,7 +56,7 @@ void SubmissionServer::setup_socket()
     {
         if (p->ai_family == AF_INET)
         { // IPv4
-            struct sockaddr_in *ipv4 = reinterpret_cast<struct sockaddr_in *>(p->ai_addr);
+            sockaddr_in *ipv4 = reinterpret_cast<sockaddr_in *>(p->ai_addr);
             char ip4[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &(ipv4->sin_addr), ip4, INET_ADDRSTRLEN);
             std::cout << "Server ready and listening at " << ip4 << ":" << port << std::endl;
