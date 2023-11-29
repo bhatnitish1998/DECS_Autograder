@@ -60,6 +60,7 @@ class GradingWorker : public Worker
     int fetchDB();
     Request req;
     bool done;
+    std::string base_dir; // base directory for intermediate files
 
 public:
     GradingWorker(uint32_t request_id);

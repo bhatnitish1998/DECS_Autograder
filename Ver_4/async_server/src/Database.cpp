@@ -4,14 +4,6 @@
 Database::Database(/* args */)
     : conn("postgresql://cs744:cs744@localhost:5432/grad?connect_timeout=10")
 {
-    if (conn.is_open())
-    {
-        std::cout << "Opened database successfully: " << conn.dbname() << std::endl;
-    }
-    else
-    {
-        std::cout << "Can't open database" << std::endl;
-    }
 }
 /// @brief Closes connection
 Database::~Database()
@@ -141,7 +133,7 @@ int Database::updateRequest(uint32_t req_id, const Request &req)
     {
         pqxx::work txn(conn);
         std::string sql = "UPDATE REQUESTS SET "
-                          "program_file = " +
+                          "program = " +
                           txn.quote(req.program_file) + ", "
                                                         "request_status = " +
                           txn.quote(req.request_status) + ", "
@@ -245,7 +237,7 @@ Request Database::queryFor(uint32_t req_id)
             const auto &row = result[0];
 
             request.req_id = row["req_id"].as<uint32_t>();
-            request.program_file = row["program_file"].c_str();
+            request.program_file = row["program"].c_str();
             request.request_status = row["request_status"].c_str();
             request.grading_status = row["grading_status"].c_str();
             request.output = row["output"].c_str();

@@ -1,4 +1,4 @@
-#include "SubmissionServer.hpp"
+#include "ResponseServer.hpp"
 
 int main(int argc, char const *argv[])
 {
@@ -6,13 +6,13 @@ int main(int argc, char const *argv[])
     int port;
     if (argc != 3)
     {
-        perror("Usage : ./submission_server <port> <thread_pool_size>");
+        std::cerr << "Usage : ./response_server <port> <thread_pool_size>\n";
         exit(1);
     }
 
     try
     {
-        SubmissionServer myserver(argv[1], argv[2]);
+        ResponseServer myserver(argv[1], argv[2]);
         while (1)
             myserver.accept_requests();
     }

@@ -7,9 +7,7 @@ Worker::Worker()
 Worker::~Worker()
 {
 }
-ResponseWorker::~ResponseWorker()
-{
-}
+
 GradingWorker::~GradingWorker()
 {
 }
@@ -98,15 +96,30 @@ int writeStringToFile(std::string file_name, std::string content)
 /// @brief Creates a worker for grading job
 /// @param request_id request id to grade
 GradingWorker::GradingWorker(uint32_t request_id)
-    : req_id(request_id), done(true)
+    : req_id(request_id), done(false), base_dir("temp/")
 {
     // Request present in DB
     if (fetchDB() == 0)
     {
-        file_identifier = std::to_string(req_id);
-        program_file = "prog_" + file_identifier + ".cpp";
-        executable_file = "exec_" + file_identifier;
-        output_file = "output_" + file_identifier + ".txt";
+        std::string directoryPath = "temp";
+
+        // Check if the temp directory exists
+        if (!std::filesystem ::exists(directoryPath))
+        {
+            // Create the directory
+            try
+            {
+                std::filesystem::create_directory(directoryPath);
+            }
+            catch (const std::filesystem::filesystem_error &e)
+            {
+                std::cerr << "Error creating temp directory: " << e.what() << std::endl;
+            }
+        }
+        file_identifier = base_dir + std::to_string(req_id);
+        program_file = file_identifier + "prog_.cpp";
+        executable_file = file_identifier + "exec";
+        output_file = file_identifier + "output.txt";
         // Write fetched program string to local file
         writeStringToFile(program_file, req.program_file);
     }
@@ -114,6 +127,7 @@ GradingWorker::GradingWorker(uint32_t request_id)
 uint32_t GradingWorker::work()
 {
     compile();
+    std::cerr << done;
     if (!done)
         run_program();
     if (!done)
@@ -193,7 +207,7 @@ void GradingWorker::run_program()
 void GradingWorker::compare_output()
 {
     std::string diff_filename = file_identifier + "diff.txt";
-    std::string cmd = "diff -Z " + output_file + " solution.txt > " + diff_filename;
+    std::string cmd = "diff -Z " + output_file + " ../../Test_files/solution.txt > " + diff_filename;
 
     if (system(cmd.c_str()) != 0)
     {
@@ -214,10 +228,15 @@ ResponseWorker::ResponseWorker(int sockfd)
     recv_req_id();
 }
 
+ResponseWorker::~ResponseWorker()
+{
+    close(sock_fd);
+}
 void ResponseWorker::recv_req_id()
 
 {
     uint32_t reqId;
+
     if (read(sock_fd, &reqId, sizeof(reqId)) < 0)
         throw("Request id read error");
     req_id = ntohl(reqId);
@@ -238,18 +257,18 @@ uint32_t ResponseWorker::work()
     req = db.queryFor(req_id);
     if (req.req_id == -1)
     {
-        msg = "Invalid request id";
+        msg = "Grading request id: " + std::to_string(req_id) + "not found. Please check and resend your request ID or re-send your original grading request\n";
         send_response(sock_fd, msg);
     }
     else if (req.request_status == "QUEUED")
     {
         auto queue_pos = findQueuePos();
-        msg = "Your request with id:" + std::to_string(req_id) + " is currently queued at position " + std::to_string(queue_pos) + "\nApprox wait time(seconds):" + std::to_string(queue_pos * getWaitTime());
+        msg = "Your grading request ID:" + std::to_string(req_id) + " has been accepted.It is currently at position " + std::to_string(queue_pos) + "\nApprox wait time(seconds):" + std::to_string(queue_pos * getWaitTime());
         send_response(sock_fd, msg);
     }
     else if (req.request_status == "GRADED")
     {
-        msg = req.grading_status + "\n" + req.output;
+        msg = "Your grading request ID " + std::to_string(req_id) + " processing is done, here are the results:\n" + req.grading_status + "\n" + req.output;
         send_response(sock_fd, msg);
     }
     return 0;

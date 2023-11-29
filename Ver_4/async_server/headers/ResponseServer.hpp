@@ -13,6 +13,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <fstream>
+#include <arpa/inet.h>
 
 class ResponseServer
 {
