@@ -33,6 +33,7 @@ int main(int argc, char const *argv[])
     catch (char const *msg)
     {
         std::cerr << msg << std::endl;
+        perror(msg);
     }
     return 0;
 }

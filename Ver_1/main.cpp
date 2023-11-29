@@ -12,8 +12,9 @@ int main(int argc, char const *argv[]) {
         while (1)
             myserver.accept_requests();
     }
-    catch (const char *msg) {
+    catch (char const *msg) {
         std::cerr << msg << std::endl;
+        perror(msg);
     }
 
     return 0;

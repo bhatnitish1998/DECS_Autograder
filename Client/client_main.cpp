@@ -13,9 +13,10 @@ int main(int argc, char const *argv[])
         Client client(argv[1], atoi(argv[2]), atoi(argv[3]), atoi(argv[4]),argv[5]);
         client.submit();
     }
-    catch (const char *msg)
+    catch (char const *msg)
     {
         std::cerr << msg << std::endl;
+        perror(msg);
     }
     return 0;
 }

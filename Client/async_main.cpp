@@ -27,9 +27,10 @@ int main(int argc, char const *argv[])
             throw std::invalid_argument("Invalid second argument. Should be 'new' or 'status'.");
         }
     }
-    catch (const char *msg)
+    catch (char const *msg)
     {
         std::cerr << msg << std::endl;
+        perror(msg);
     }
     return 0;
 }
