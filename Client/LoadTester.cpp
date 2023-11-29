@@ -37,7 +37,6 @@ void LoadTester::establish_control_connection() {
     control_addr.sin_addr.s_addr = inet_addr(server_ip.c_str());
 
     int sc = connect(control_sockfd, (struct sockaddr *)&control_addr, sizeof(control_addr));
-    cout<<"connected\n";
     if (sc < 0)
         throw("Cannot connect");
 }
@@ -61,7 +60,7 @@ void LoadTester::run_test() {
     {
 
         send_long(i);
-        cerr<<"Sent"<<i<<endl;
+        cerr<<"Sent "<<i<<endl;
 
         auto start_time = chrono::high_resolution_clock::now();
         for(int j = 0; j<i;j++)
@@ -74,10 +73,10 @@ void LoadTester::run_test() {
         threads.clear();
 
         fout<<i<<","; //clients
-        fout << global_data[0] << ","; // Requests
-        fout << (global_data[1]/global_data[0])*100 << ","; // Successes
-        fout << (global_data[2]/global_data[0])*100 << ","; // Timeouts
-        fout << (global_data[3]/global_data[0])*100 << ","; // other errors
+        fout << (global_data[0]/time_elapsed)*1000 << ","; // Request rate
+        fout << (global_data[1]/global_data[0])*100 << ","; // Success percent
+        fout << (global_data[2]/global_data[0])*100 << ","; // Timeout percent
+        fout << (global_data[3]/global_data[0])*100 << ","; // other error percent
         fout << global_data[4]/global_data[1] << ","; // average response time
         fout << (global_data[1]/time_elapsed)*1000; // throughput
         fout<<endl;
