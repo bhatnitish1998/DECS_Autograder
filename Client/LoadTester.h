@@ -20,6 +20,9 @@
 // control port
 #define CONTROL_PORT 5001
 
+// program file
+#define PROGRAMFILE "../Test_files/test4.cpp"
+
 using namespace std;
 
 // mutex and global vector for storing data returned by each client.

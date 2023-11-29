@@ -1,7 +1,8 @@
 #include "Client.hpp"
 
-Client::Client(const char *remote_address, int loop_num, int sleep_time, int timeout_sec) : n_req(0), n_succ(0), n_timeout(0), iterations(loop_num), sleepTime(sleep_time), timeout(timeout_sec)
+Client::Client(const char *remote_address, int loop_num, int sleep_time, int timeout_sec,const char * program_filename) : n_req(0), n_succ(0), n_timeout(0), iterations(loop_num), sleepTime(sleep_time), timeout(timeout_sec),program_filename(program_filename)
 {
+
     int status;
     addrinfo hints, *p;
     std::memset(&hints, 0, sizeof hints);
@@ -13,9 +14,11 @@ Client::Client(const char *remote_address, int loop_num, int sleep_time, int tim
         throw("getaddrinfo error");
     }
 
-    std::string path = "../Test_files/";
-    for (const auto &file : std::filesystem::directory_iterator(path))
-        test_files.push_back(file.path());
+    if(RANDOMIZE) {
+        std::string path = "../Test_files/";
+        for (const auto &file: std::filesystem::directory_iterator(path))
+            test_files.push_back(file.path());
+    }
 }
 
 void Client::send_file()

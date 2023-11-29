@@ -35,7 +35,7 @@ class Client
 
 
 public:
-    Client(const char *remote_address, int loop_num, int sleep_time, int timeout_sec) ;
+    Client(const char *remote_address, int loop_num, int sleep_time, int timeout_sec,const char * program_filename) ;
     void submit();
     std::vector<double>  get_statistics();
 
