@@ -178,20 +178,9 @@ std::vector<double> AsyncClient::get_statistics()
 uint32_t AsyncClient::getIDFromMessage()
 {
     size_t firstPos = response_string.find('<');
-    size_t nextPos = response_string.find('>');
-    std::regex pattern("[0-9]+");
-    uint32_t request_id = 0;
-    // Search for the numberic pattern between angular brackets in response string
-    std::smatch match;
-    if (std::regex_search(response_string, match, pattern))
-    {
-        // Extract the numeric value from the match
-        std::string numericValue = match[1].str();
-        std::cout << numericValue << std::endl;
-        // Convert the numeric value to an integer
-        request_id = static_cast<uint32_t>(std::stoi(numericValue));
-        std::cout << request_id << std::endl;
-    }
+    size_t lastPos = response_string.find('>');
+    auto id_string = response_string.substr(firstPos + 1, lastPos - firstPos - 1);
+    uint32_t request_id = static_cast<uint32_t>(std::stol(id_string));
     return request_id;
 }
 
