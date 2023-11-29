@@ -5,7 +5,7 @@ int main(int argc, char const *argv[]) {
     int port;
     try {
         if (argc != 2) {
-            throw ("Usage : ./server <port>");
+            throw ("Usage : ./server <port> ");
         }
 
         Server myserver(argv[1]);

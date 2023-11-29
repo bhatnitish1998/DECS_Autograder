@@ -59,14 +59,9 @@ void Server::accept_requests()
     if (newsockfd < 0)
         throw("Error accepting connection");
 
-     std::thread(&Server::thread_function, this, newsockfd).detach();
+    Worker worker(newsockfd);
+    worker.process_request();
 }
-
- void Server::thread_function(int newsockfd)
- {
-     Worker worker(newsockfd);
-     worker.process_request();
- }
 
 void Server::setup_control() {
 
@@ -118,7 +113,7 @@ uint32_t  Server::receive_long() {
 
 void Server::control_thread_function() {
     setup_control();
-    std::ofstream fout("../Graphs_and_Logs/ver2_server.txt");
+    std::ofstream fout("../Graphs_and_Logs/ver1_server.txt");
     fout<<"cpu,threads,queue,service_time"<<std::endl;
     uint32_t number_of_clients = 0;
 

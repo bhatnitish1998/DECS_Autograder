@@ -33,7 +33,6 @@ class Server
     
 
     void setup_socket();
-    void thread_function(int newsockfd);
     void setup_control();
     uint32_t receive_long();
     void control_thread_function();
