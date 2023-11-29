@@ -13,6 +13,9 @@
 #include <mutex>
 #include <condition_variable>
 #include <fstream>
+#include <fcntl.h>
+
+#define CONTROL_PORT 5001
 
 class Server
 {
@@ -26,11 +29,20 @@ class Server
     int pool_size;
     std::mutex queue_mutex;
     std::condition_variable queue_cond;
+    int control_sockfd;
+    int new_control_sockfd;
     
 
     void setup_socket();
     void threadpool_function();
     void setup_threadpool();
+    void setup_control();
+    uint32_t receive_long();
+    void control_thread_function();
+    double get_cpu_utilization();
+    int get_threads();
+    void log_data(std::ofstream&);
+
 
 
 public:

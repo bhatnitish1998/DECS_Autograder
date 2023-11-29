@@ -73,7 +73,7 @@ void Client::receive_response()
         read_bytes += current_read;
         response += std::string(buffer);
     }
-    std::cout<<"Response received from server:\n"+response<<std::endl;
+//    std::cout<<"Response received from server:\n"+response<<std::endl;
 }
 
 void Client::parseAddress(std::string remoteAddress)
@@ -138,7 +138,7 @@ std::vector<double> Client::get_statistics() {
     data.push_back(n_req);
     data.push_back(n_succ);
     data.push_back(n_timeout);
-    data.push_back(n_req-(n_succ+n_timeout);
+    data.push_back(n_req-(n_succ+n_timeout));
     data.push_back(total_rt);
 
     return data;

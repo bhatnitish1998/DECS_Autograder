@@ -16,7 +16,7 @@ int main(int argc, char const *argv[])
         LoadTester lt = LoadTester(argv[1],atoi(argv[2]));
         lt.run_test();
     }
-    catch (const char *msg)
+    catch (char const *msg)
     {
         std::cerr << msg << std::endl;
     }

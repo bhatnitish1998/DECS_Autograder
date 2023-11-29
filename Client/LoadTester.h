@@ -17,6 +17,9 @@
 #define SLEEP 1
 #define TIMEOUT 1
 
+// control port
+#define CONTROL_PORT 5001
+
 using namespace std;
 
 // mutex and global vector for storing data returned by each client.
@@ -26,7 +29,11 @@ extern vector<double> global_data;
 class LoadTester {
     string server_info;
     int version;
+    int control_sockfd;
+
     void run_client ();
+    void establish_control_connection();
+    void send_long (uint32_t value);
 
 public:
     LoadTester(const char * server_info, int version);
