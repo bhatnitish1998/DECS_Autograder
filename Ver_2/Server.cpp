@@ -174,7 +174,7 @@ double Server::get_cpu_utilization()
 
 int Server::get_threads()
 {
-    FILE *ps_output = popen("ps -T -p $(pgrep 'server') --no-headers | wc -l", "r");
+    FILE *ps_output = popen("ps -T --no-headers  -p $(pgrep 'server' | xargs echo ;) | wc -l", "r");
     if (!ps_output)
     {
         return 0;
