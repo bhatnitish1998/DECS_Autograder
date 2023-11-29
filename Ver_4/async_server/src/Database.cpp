@@ -34,7 +34,7 @@ std::vector<uint32_t> Database::getPendingTasks()
     {
         pendingTasks.clear();
         pqxx::work txn(conn);
-        std::string sql = "SELECT req_id FROM REQUESTS WHERE request_status = QUEUED;";
+        std::string sql = "SELECT req_id FROM REQUESTS WHERE request_status = 'QUEUED';";
         pqxx::result R(txn.exec(sql));
 
         /* Append all the request ids */

@@ -1,14 +1,20 @@
 #include "AsyncClient.hpp"
 
-AsyncClient::AsyncClient(const char *remote_address) : n_req(0), n_succ(0), n_timeout(0)
+AsyncClient::AsyncClient(const char *submission_remote_address, const char *response_remote_address, int loop_num, int timeout)
+    : n_req(0), n_succ(0), n_timeout(0), timeout(timeout), iterations(loop_num)
 {
     int status;
     addrinfo hints, *p;
     std::memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
-    parseAddress(remote_address);
-    if ((status = getaddrinfo(serverIp.c_str(), port.c_str(), &hints, &servinfo)) != 0)
+    parseSubmissionAddress(submission_remote_address);
+    parseResponseAddress(response_remote_address);
+    if ((status = getaddrinfo(submission_serverIp.c_str(), submission_port.c_str(), &hints, &submission_servinfo)) != 0)
+    {
+        throw("getaddrinfo error");
+    }
+    if ((status = getaddrinfo(response_serverIp.c_str(), response_port.c_str(), &hints, &response_servinfo)) != 0)
     {
         throw("getaddrinfo error");
     }
@@ -24,7 +30,7 @@ void AsyncClient::send_file()
     uint32_t file_size = std::filesystem::file_size(program_filename);
     uint32_t length_to_send = htonl(file_size);
 
-    if (write(sockfd, &length_to_send, sizeof(length_to_send)) < 0)
+    if (write(submission_sockfd, &length_to_send, sizeof(length_to_send)) < 0)
         throw("error sending file size");
 
     std::ifstream fin(program_filename, std::ios::binary);
@@ -38,13 +44,13 @@ void AsyncClient::send_file()
         fin.read(buffer, sizeof(buffer));
         int k = fin.gcount();
         // todo: handle if kernel fails to send the data
-        int n = write(sockfd, buffer, k);
+        int n = write(submission_sockfd, buffer, k);
         if (n < 0)
             throw("error writing file");
     }
 }
 
-void AsyncClient::receive_response()
+void AsyncClient::receive_response(int sockfd)
 {
     std::string response = "";
     int status;
@@ -80,7 +86,7 @@ void AsyncClient::receive_response()
     std::cout << response << "\n";
 }
 
-void AsyncClient::parseAddress(std::string remoteAddress)
+void AsyncClient::parseSubmissionAddress(std::string remoteAddress)
 {
     size_t colonPos = remoteAddress.find(':');
 
@@ -90,25 +96,49 @@ void AsyncClient::parseAddress(std::string remoteAddress)
     }
 
     // Extract the IP address and port
-    serverIp = remoteAddress.substr(0, colonPos);
-    port = remoteAddress.substr(colonPos + 1);
+    submission_serverIp = remoteAddress.substr(0, colonPos);
+    submission_port = remoteAddress.substr(colonPos + 1);
 }
 
-void AsyncClient::setup_socket()
+void AsyncClient::parseResponseAddress(std::string remoteAddress)
 {
-    if ((sockfd = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol)) == -1)
+    size_t colonPos = remoteAddress.find(':');
+
+    if (colonPos == std::string::npos)
+    {
+        throw("Invalid server argument format. Use <server-ip:port>");
+    }
+
+    // Extract the IP address and port
+    response_serverIp = remoteAddress.substr(0, colonPos);
+    response_port = remoteAddress.substr(colonPos + 1);
+}
+
+void AsyncClient::setup_submission_socket()
+{
+    if ((submission_sockfd = socket(submission_servinfo->ai_family, submission_servinfo->ai_socktype, submission_servinfo->ai_protocol)) == -1)
         throw("Error opening socket");
 
     timeval time_out;
     time_out.tv_sec = timeout;
     time_out.tv_usec = 0;
-    if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &time_out, sizeof(time_out)) == -1)
+    if (setsockopt(submission_sockfd, SOL_SOCKET, SO_RCVTIMEO, &time_out, sizeof(time_out)) == -1)
     {
-        close(sockfd);
+        close(submission_sockfd);
         throw("Set socket timeout failed");
     }
 
-    int sc = connect(sockfd, servinfo->ai_addr, servinfo->ai_addrlen);
+    int sc = connect(submission_sockfd, submission_servinfo->ai_addr, submission_servinfo->ai_addrlen);
+    if (sc < 0)
+        throw("Cannot connect");
+}
+
+void AsyncClient::setup_response_socket()
+{
+    if ((response_sockfd = socket(response_servinfo->ai_family, response_servinfo->ai_socktype, response_servinfo->ai_protocol)) == -1)
+        throw("Error opening socket");
+
+    int sc = connect(response_sockfd, response_servinfo->ai_addr, response_servinfo->ai_addrlen);
     if (sc < 0)
         throw("Cannot connect");
 }
@@ -120,45 +150,71 @@ std::string AsyncClient::choose_file()
     return test_files.at(r);
 }
 
-void AsyncClient::display_statistics()
+std::vector<double> AsyncClient::get_statistics()
 {
-    double total_rt = 0;
-    for (auto x : response_times)
-        total_rt += x;
-    std::cout << "Number of requests: " << n_req << std::endl;
-    std::cout << "Successful responses: " << n_succ << std::endl;
-    std::cout << "Timeouts: " << n_timeout << std::endl;
-    std::cout << "Total response time: " << total_rt << std::endl;
+    std::vector<double> data;
+
+    double total_rt_ack = 0;
+    double total_rt_done = 0;
+    for (auto x : response_time_ack)
+        total_rt_ack += x;
+    for (int i = 0; i < response_time_ack.size(); i++)
+    {
+        response_time_done[i] += response_time_ack[i]; // final response time is cumulative
+    }
+    for (auto x : response_time_done)
+        total_rt_done += x;
+
+    data.push_back(n_req);
+    data.push_back(n_succ);
+    data.push_back(n_timeout);
+    data.push_back(n_req - (n_succ + n_timeout));
+    data.push_back(total_rt_ack);
+    data.push_back(total_rt_done);
+
+    return data;
+}
+
+uint32_t AsyncClient::getIDFromMessage()
+{
+    size_t firstPos = response_string.find('<');
+    size_t lastPos = response_string.find('>');
+    auto id_string = response_string.substr(firstPos + 1, lastPos - firstPos - 1);
+    uint32_t request_id = static_cast<uint32_t>(std::stol(id_string));
+    return request_id;
 }
 
 void AsyncClient::submit(const char *filename)
 {
-    try
+    for (int i = 0; i < iterations; i++)
     {
-        setup_socket();
-        program_filename = filename;
-        send_file();
-        n_req++;
-        auto start_time = std::chrono::high_resolution_clock::now();
-        receive_response();
-        n_succ++;
-        auto end_time = std::chrono::high_resolution_clock::now();
-        double total_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
-        response_times.push_back(total_time);
+        try
+        {
+            setup_submission_socket();
+            program_filename = filename;
+            send_file();
+            n_req++;
+            auto start_time = std::chrono::high_resolution_clock::now();
+            receive_response(submission_sockfd);
+            n_succ++;
+            auto end_time = std::chrono::high_resolution_clock::now();
+            double total_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+            response_time_ack.push_back(total_time);
+            uint32_t req_id = getIDFromMessage();
+            checkStatus(req_id);
+        }
+        catch (const char *msg)
+        {
+            std::cerr << msg << std::endl;
+        }
+        close(submission_sockfd);
     }
-    catch (const char *msg)
-    {
-        std::cerr << msg << std::endl;
-    }
-    close(sockfd);
-
-    display_statistics();
 }
 
 void AsyncClient::send_req_id()
 {
     auto id = htonl(req_id);
-    if (write(sockfd, &id, sizeof(id)) < 0)
+    if (write(response_sockfd, &id, sizeof(id)) < 0)
         throw("Request id send error");
 }
 
@@ -170,16 +226,17 @@ void AsyncClient::checkStatus(const uint32_t request_id)
     // poll the server until grading is done
     while (1)
     {
-        setup_socket();
+        setup_response_socket();
         send_req_id();
         auto start_time = std::chrono::high_resolution_clock::now();
-        receive_response();
-        auto end_time = std::chrono::high_resolution_clock::now();
-        double total_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
-        response_times.push_back(total_time);
+        receive_response(response_sockfd);
         // Check if the response contatins done somewhere
         if (std::regex_search(response_string, pattern))
         {
+            auto end_time = std::chrono::high_resolution_clock::now();
+            double total_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+            response_time_done.push_back(total_time);
+            close(response_sockfd);
             break;
         }
         else
