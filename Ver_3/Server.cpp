@@ -12,7 +12,7 @@ Server::Server(const char *port,const char *pool_size) : port(std::stoi(port)),p
 void Server::setup_socket()
 {
     int status;
-    addrinfo hints, *servinfo;
+    addrinfo hints, *servinfo, *p;
     std::memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
@@ -36,7 +36,17 @@ void Server::setup_socket()
     if (listen(sockfd, backlog) == -1)
         throw("listen");
 
-    std::cerr << "Server ready and listening at "<< ":" << port << std::endl;
+    for (p = servinfo; p != nullptr; p = p->ai_next)
+    {
+        if (p->ai_family == AF_INET)
+        { // IPv4
+            struct sockaddr_in *ipv4 = reinterpret_cast<struct sockaddr_in *>(p->ai_addr);
+            char ip4[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &(ipv4->sin_addr), ip4, INET_ADDRSTRLEN);
+            std::cerr << "Server ready and listening at " << ip4 << ":" << port << std::endl;
+            break;
+        }
+    }
 
     freeaddrinfo(servinfo);
 }

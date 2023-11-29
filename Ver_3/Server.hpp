@@ -14,6 +14,7 @@
 #include <condition_variable>
 #include <fstream>
 #include <fcntl.h>
+#include <arpa/inet.h>
 
 #define CONTROL_PORT 5001
 
