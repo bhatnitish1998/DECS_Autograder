@@ -1,5 +1,9 @@
 #include "AsyncClient.hpp"
-
+/// @brief Async client constructor
+/// @param submission_remote_address Address of submission server
+/// @param response_remote_address  Address of response server
+/// @param loop_num Number of requests to send
+/// @param timeout Timeout in seconds
 AsyncClient::AsyncClient(const char *submission_remote_address, const char *response_remote_address, int loop_num, int timeout)
     : n_req(0), n_succ(0), n_timeout(0), timeout(timeout), iterations(loop_num)
 {
@@ -23,7 +27,7 @@ AsyncClient::AsyncClient(const char *submission_remote_address, const char *resp
     for (const auto &file : std::filesystem::directory_iterator(path))
         test_files.push_back(file.path());
 }
-
+/// @brief Sends program file to submission server
 void AsyncClient::send_file()
 {
     std::cout << "Sending file " << program_filename << "\n";
@@ -49,7 +53,8 @@ void AsyncClient::send_file()
             throw("error writing file");
     }
 }
-
+/// @brief receives response from given socket descriptor
+/// @param sockfd Socket descriptor
 void AsyncClient::receive_response(int sockfd)
 {
     std::string response = "";
@@ -85,7 +90,8 @@ void AsyncClient::receive_response(int sockfd)
     response_string = response;
     std::cout << response << "\n";
 }
-
+/// @brief Parse submission server address
+/// @param remoteAddress
 void AsyncClient::parseSubmissionAddress(std::string remoteAddress)
 {
     size_t colonPos = remoteAddress.find(':');
@@ -99,7 +105,8 @@ void AsyncClient::parseSubmissionAddress(std::string remoteAddress)
     submission_serverIp = remoteAddress.substr(0, colonPos);
     submission_port = remoteAddress.substr(colonPos + 1);
 }
-
+/// @brief Parse response server address
+/// @param remoteAddress
 void AsyncClient::parseResponseAddress(std::string remoteAddress)
 {
     size_t colonPos = remoteAddress.find(':');
@@ -113,7 +120,7 @@ void AsyncClient::parseResponseAddress(std::string remoteAddress)
     response_serverIp = remoteAddress.substr(0, colonPos);
     response_port = remoteAddress.substr(colonPos + 1);
 }
-
+/// @brief Creates socket and connects to submission server
 void AsyncClient::setup_submission_socket()
 {
     if ((submission_sockfd = socket(submission_servinfo->ai_family, submission_servinfo->ai_socktype, submission_servinfo->ai_protocol)) == -1)
@@ -132,7 +139,7 @@ void AsyncClient::setup_submission_socket()
     if (sc < 0)
         throw("Cannot connect");
 }
-
+/// @brief Creates socket and connects to response server
 void AsyncClient::setup_response_socket()
 {
     if ((response_sockfd = socket(response_servinfo->ai_family, response_servinfo->ai_socktype, response_servinfo->ai_protocol)) == -1)
@@ -150,6 +157,8 @@ std::string AsyncClient::choose_file()
     return test_files.at(r);
 }
 
+/// @brief Returns performance stats
+/// @return vector representing number of requests, number of successes, number of timeouts, number of other errors, first reponse time, total response time
 std::vector<double> AsyncClient::get_statistics()
 {
     std::vector<double> data;
@@ -174,7 +183,8 @@ std::vector<double> AsyncClient::get_statistics()
 
     return data;
 }
-
+/// @brief Extracts request ID from response string
+/// @return
 uint32_t AsyncClient::getIDFromMessage()
 {
     size_t firstPos = response_string.find('<');
@@ -183,7 +193,8 @@ uint32_t AsyncClient::getIDFromMessage()
     uint32_t request_id = static_cast<uint32_t>(std::stol(id_string));
     return request_id;
 }
-
+/// @brief Simulates multiple requests to submission server and polls response server in 1 second interval
+/// @param filename
 void AsyncClient::submit(const char *filename)
 {
     for (int i = 0; i < iterations; i++)
@@ -210,14 +221,15 @@ void AsyncClient::submit(const char *filename)
         close(submission_sockfd);
     }
 }
-
+/// @brief Sends request id to response server
 void AsyncClient::send_req_id()
 {
     auto id = htonl(req_id);
     if (write(response_sockfd, &id, sizeof(id)) < 0)
         throw("Request id send error");
 }
-
+/// @brief Function to query status of a request id
+/// @param request_id Id to query for
 void AsyncClient::checkStatus(const uint32_t request_id)
 {
     // The regular expression pattern to search for

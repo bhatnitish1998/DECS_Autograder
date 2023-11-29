@@ -1,4 +1,5 @@
 #include "SubmissionServer.hpp"
+FastQueue grader_queue;
 void SubmissionServer::setup_control()
 {
     sockaddr_in control_addr;
@@ -287,6 +288,5 @@ void SubmissionServer::gradingPoolFunction()
             std::unique_lock<std::mutex> lock(service_mutex);
             service_time = temp_st;
         }
-
     }
 }

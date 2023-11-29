@@ -1,5 +1,7 @@
 #include "ResponseServer.hpp"
-
+/// @brief Response server is created with a given thread pool size and listens on given port
+/// @param port Port to bind to
+/// @param pool_size Thread pool size
 ResponseServer::ResponseServer(const char *port, const char *pool_size)
     : port(std::stoi(port)),
       pool_size(std::stoi(pool_size)),
@@ -8,12 +10,13 @@ ResponseServer::ResponseServer(const char *port, const char *pool_size)
     setup_threadpool();
     setup_socket();
 }
+/// @brief Creates the thread pool
 void ResponseServer::setup_threadpool()
 {
     for (int i = 0; i < pool_size; i++)
         status_thread_pool.push_back(std::thread(&ResponseServer::statuspool_function, this));
 }
-
+/// @brief Accepts a request and puts into queue
 void ResponseServer::accept_requests()
 {
     sockaddr_in client_addr;
@@ -30,7 +33,7 @@ void ResponseServer::accept_requests()
     }
     status_queue_cond.notify_one();
 }
-
+/// @brief Creates, binds and listens on a socket
 void ResponseServer::setup_socket()
 {
     int status;
@@ -76,7 +79,7 @@ void ResponseServer::setup_socket()
     }
     freeaddrinfo(servinfo);
 }
-
+/// @brief Functions executed by the threads in the thread pool
 void ResponseServer::statuspool_function()
 {
     while (true)
@@ -89,7 +92,7 @@ void ResponseServer::statuspool_function()
             work_sockfd = status_queue.front();
             status_queue.pop();
         }
-
+        // Does the actual work of sending response
         ResponseWorker worker(work_sockfd);
         worker.work();
     }

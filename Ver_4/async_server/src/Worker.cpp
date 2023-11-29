@@ -1,5 +1,6 @@
 #include "Worker.hpp"
 // Unused Destructor
+FastQueue grader_queue;
 GradingWorker::~GradingWorker()
 {
 }
@@ -273,7 +274,7 @@ void ResponseWorker::work()
     }
     else if (req.request_status == "QUEUED")
     {
-        auto queue_pos = findQueuePos();
+        auto queue_pos = grader_queue.get_index(req.req_id);
         msg = "Your grading request ID: <" + std::to_string(req_id) + "> has been accepted.It is currently at position " + std::to_string(queue_pos) + "\nApprox wait time(seconds):" + std::to_string(queue_pos * getWaitTime());
         send_response(sock_fd, msg);
     }

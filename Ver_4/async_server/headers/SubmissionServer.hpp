@@ -14,8 +14,10 @@
 #include <fstream>
 #include <fcntl.h>
 #include <arpa/inet.h>
+#include "FastQueue.h"
 #define CONTROL_PORT 5001
 /// @brief Class representing the submission server
+FastQueue grader_queue;
 class SubmissionServer
 {
     int port;
@@ -30,7 +32,6 @@ class SubmissionServer
     std::vector<std::thread> grader_thread_pool;
 
     std::queue<int> submission_queue;
-    std::queue<uint32_t> grader_queue;
 
     std::mutex submission_queue_mutex;
     std::condition_variable submission_queue_cond;
