@@ -1,0 +1,3 @@
+clients,requests,success_percent,timeout_percent,error_percent,avg_rt,throughput,avg_rt_2
+5,4.79111,100,0,0,15.35,4.79111,29.51
+10,9.52971,100,0,0,14.44,9.52971,27.83

@@ -47,3 +47,8 @@ main
 # libraries
 lib
 pqxx
+
+Client/
+AsyncClient
+LoadTester
+Client

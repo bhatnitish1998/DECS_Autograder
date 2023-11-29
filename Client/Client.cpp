@@ -76,7 +76,7 @@ void Client::receive_response()
         read_bytes += current_read;
         response += std::string(buffer);
     }
-//    std::cout<<"Response received from server:\n"+response<<std::endl;
+    std::cout<<"Response received from server:\n"+response<<std::endl;
 }
 
 void Client::parseAddress(std::string remoteAddress)
@@ -175,5 +175,4 @@ void Client::submit()
 
         sleep(sleepTime);
     }
-//    display_statistics();
 }
