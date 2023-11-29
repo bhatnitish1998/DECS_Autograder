@@ -1,13 +1,151 @@
 #include "SubmissionServer.hpp"
+void SubmissionServer::setup_control()
+{
+    sockaddr_in control_addr;
+    control_sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (control_sockfd < 0)
+        throw("Error opening socket");
+
+    memset(&control_addr, 0, sizeof(control_addr));
+    control_addr.sin_family = AF_INET;
+    control_addr.sin_port = htons(CONTROL_PORT);
+    control_addr.sin_addr.s_addr = INADDR_ANY;
+
+    int sc = bind(control_sockfd, (sockaddr *)&control_addr, sizeof(control_addr));
+    if (sc < 0)
+        throw("Error while binding");
+
+    listen(control_sockfd, 1);
+    std::cerr << "Control channel at " << control_addr.sin_addr.s_addr << ":" << CONTROL_PORT << std::endl;
+
+    sockaddr_in loadtester_addr;
+    socklen_t loadtester_length = sizeof(loadtester_addr);
+
+    new_control_sockfd = accept(control_sockfd, (sockaddr *)&loadtester_addr, &loadtester_length);
+    std::cerr << "Connected\n";
+    if (new_control_sockfd < 0)
+        throw("Error accepting connection");
+
+    // set nonblocking
+    int flags = fcntl(new_control_sockfd, F_GETFL, 0);
+    if (flags < 0)
+        throw("Error getting flags");
+
+    if (fcntl(new_control_sockfd, F_SETFL, flags | O_NONBLOCK) < 0)
+        throw("Error setting flags");
+}
+
+uint32_t SubmissionServer::receive_long()
+{
+    uint32_t value = 0;
+    int n = read(new_control_sockfd, &value, sizeof(value));
+    if (n > 0)
+    {
+        value = ntohl(value);
+        return value;
+    }
+    return value;
+}
+void SubmissionServer::control_thread_function()
+{
+    setup_control();
+    std::ofstream fout("../Graphs_and_Logs/ver3_server.txt");
+    fout << "cpu,threads,queue,service_time" << std::endl;
+    uint32_t number_of_clients = 0;
+
+    while (true)
+    {
+        number_of_clients = receive_long();
+
+        // if received new value
+        if (number_of_clients)
+        {
+            fout << number_of_clients << std::endl;
+            if (number_of_clients > 5000)
+            {
+                fout.close();
+                break;
+            }
+        }
+
+        // if not received value then write same value.
+        log_data(fout);
+        sleep(0.5);
+    }
+}
+double SubmissionServer::get_cpu_utilization()
+{
+    FILE *top_output = popen("top -bn 1 | grep '%Cpu' | awk '{print $2}'", "r");
+    if (!top_output)
+    {
+        return -1.0;
+    }
+    char buffer[128];
+    double cpu_utilization = -1.0;
+
+    if (fgets(buffer, sizeof(buffer), top_output) != nullptr)
+    {
+        cpu_utilization = std::stod(buffer);
+    }
+    pclose(top_output);
+    return cpu_utilization;
+}
+int SubmissionServer::get_threads()
+{
+    FILE *ps_output = popen("ps -T -p $(pgrep 'server') --no-headers | wc -l", "r");
+    if (!ps_output)
+    {
+        return 0;
+    }
+    char buffer[128];
+    int threads = 0;
+
+    if (fgets(buffer, sizeof(buffer), ps_output) != nullptr)
+    {
+        threads = std::stoi(buffer);
+    }
+    pclose(ps_output);
+    return threads;
+}
+void SubmissionServer::log_data(std::ofstream &fout)
+{
+    // cpu utilization
+    double cpu = get_cpu_utilization();
+    fout << cpu << ",";
+
+    // number of threads
+    int threads = get_threads();
+    fout << threads << ",";
+
+    // current queue size
+    int current_queue_size = 0;
+    {
+        std::unique_lock<std::mutex> lock(grader_queue_mutex);
+        current_queue_size = grader_queue.size();
+    }
+    fout << current_queue_size << ",";
+
+    double temp_st = 0;
+    {
+        std::unique_lock<std::mutex> lock(service_mutex);
+        temp_st = service_time;
+    }
+    fout << temp_st << ",";
+
+    fout << std::endl;
+}
 SubmissionServer::SubmissionServer(const char *port, const char *pool_size)
     : port(std::stoi(port)),
       pool_size(std::stoi(pool_size)),
-      backlog(5)
+      backlog(5),
+      service_time(0)
 {
     // Recover queue in the event of server crash
     recoverGradingQueue();
     // Setup both threadpools
     setup_threadpools();
+    // Setup Control thread
+    std::thread(&SubmissionServer::control_thread_function, this).detach();
     // Setup connection socket
     setup_socket();
 }
