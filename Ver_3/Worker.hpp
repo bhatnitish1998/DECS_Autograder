@@ -39,7 +39,7 @@ class Worker
 
 public:
     Worker(int newsockfd);
-    void process_request();
+    double process_request();
 };
 
 #endif

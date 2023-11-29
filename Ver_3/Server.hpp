@@ -31,6 +31,8 @@ class Server
     std::condition_variable queue_cond;
     int control_sockfd;
     int new_control_sockfd;
+    double service_time;
+    std::mutex service_mutex;
     
 
     void setup_socket();

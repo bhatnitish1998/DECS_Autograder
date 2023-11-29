@@ -3,6 +3,7 @@
 Server::Server(const char *port,const char *pool_size) : port(std::stoi(port)),pool_size(std::stoi(pool_size))
 {
     backlog = 5;
+    service_time=0;
     setup_threadpool();
     std::thread(&Server::control_thread_function,this).detach();
     setup_socket();
@@ -34,7 +35,8 @@ void Server::setup_socket()
     }
     if (listen(sockfd, backlog) == -1)
         throw("listen");
-    
+
+    std::cerr << "Server ready and listening at "<< ":" << port << std::endl;
 
     freeaddrinfo(servinfo);
 }
@@ -75,7 +77,12 @@ void Server::threadpool_function()
         }
 
         Worker worker(work_sockfd);
-        worker.process_request();
+        double temp_st = worker.process_request();
+
+        {
+            std::unique_lock <std::mutex> lock(service_mutex);
+            service_time = temp_st;
+        }
     }
 }
 
@@ -96,7 +103,7 @@ void Server::setup_control() {
         throw("Error while binding");
 
     listen(control_sockfd, 1);
-    std::cerr << "Control ready and listening at " << control_addr.sin_addr.s_addr << ":" << CONTROL_PORT << std::endl;
+    std::cerr << "Control channel at " << control_addr.sin_addr.s_addr << ":" << CONTROL_PORT << std::endl;
 
     sockaddr_in loadtester_addr;
     socklen_t loadtester_length = sizeof(loadtester_addr);
@@ -130,7 +137,7 @@ uint32_t  Server::receive_long() {
 void Server::control_thread_function() {
     setup_control();
     std::ofstream fout("../Graphs_and_Logs/ver3_server.txt");
-    fout<<"cpu,threads,queue"<<std::endl;
+    fout<<"cpu,threads,queue,service_time"<<std::endl;
     uint32_t number_of_clients = 0;
 
     while(true)
@@ -192,13 +199,21 @@ void Server::log_data(std::ofstream &fout) {
     // number of threads
     int threads = get_threads();
     fout<<threads<<",";
-    int current_queue_size =0;
 
     // current queue size
+    int current_queue_size =0;
     {
         std::unique_lock<std::mutex> lock(queue_mutex);
         current_queue_size = request_queue.size();
     }
     fout<<current_queue_size<<",";
+
+    double temp_st = 0;
+    {
+        std::unique_lock<std::mutex> lock(service_mutex);
+        temp_st = service_time;
+    }
+    fout<<temp_st<<",";
+
     fout<<std::endl;
 }

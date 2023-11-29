@@ -129,8 +129,9 @@ void Worker::compare_output()
     cleanuplist.push_back(diff_filename);
 }
 
-void Worker::process_request()
+double Worker::process_request()
 {
+    auto start_time = std::chrono::high_resolution_clock::now();
     receive_file();
     compile();
     if (!done)
@@ -139,6 +140,9 @@ void Worker::process_request()
         compare_output();
     send_response();
     cleanup();
+    auto end_time = std::chrono::high_resolution_clock::now();
+    double service_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time-start_time).count();
+    return service_time;
 }
 
 void Worker:: cleanup()
