@@ -3,6 +3,7 @@
 #include "pqxx/pqxx"
 #include <exception>
 #include <iostream>
+#include <random>
 struct Request
 {
     uint32_t req_id;
@@ -21,8 +22,8 @@ public:
     void deleteAll();
     void showAll();
     void show(uint32_t req_id);
-    int insertRequest(const Request &req);
-    int insertRequest(const uint32_t req_id, const std::string program, const std::string request_status = "", const std::string grading_status = "", const std::string output = "");
+    uint32_t insertRequest(const Request &req);
+    uint32_t insertRequest(const std::string program, const std::string request_status = "", const std::string grading_status = "", const std::string output = "");
     int updateRequest(uint32_t req_id, const Request &req);
     int updateReqStatus(uint32_t req_id, std::string new_status);
     int updateGradingStatus(uint32_t req_id, std::string grad_status);
