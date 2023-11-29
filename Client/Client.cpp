@@ -1,6 +1,6 @@
 #include "Client.hpp"
 
-Client::Client(const char *remote_address, int loop_num, int sleep_time, int timeout_sec,const char * program_filename) : n_req(0), n_succ(0), n_timeout(0), iterations(loop_num), sleepTime(sleep_time), timeout(timeout_sec),program_filename(program_filename)
+Client::Client(const char *remote_address, int loop_num, int sleep_time, int timeout_sec, const char *program_filename) : n_req(0), n_succ(0), n_timeout(0), iterations(loop_num), sleepTime(sleep_time), timeout(timeout_sec), program_filename(program_filename)
 {
 
     int status;
@@ -14,9 +14,10 @@ Client::Client(const char *remote_address, int loop_num, int sleep_time, int tim
         throw("getaddrinfo error");
     }
 
-    if(RANDOMIZE) {
+    if (RANDOMIZE)
+    {
         std::string path = "../Test_files/";
-        for (const auto &file: std::filesystem::directory_iterator(path))
+        for (const auto &file : std::filesystem::directory_iterator(path))
             test_files.push_back(file.path());
     }
 }
@@ -54,7 +55,6 @@ void Client::receive_response()
     {
         if (errno == EWOULDBLOCK)
             n_timeout++;
-        throw("file size read error");
     }
 
     message_size = ntohl(message_size);
@@ -71,12 +71,11 @@ void Client::receive_response()
         {
             if (errno == EWOULDBLOCK)
                 n_timeout++;
-            throw("socket read error");
         }
         read_bytes += current_read;
         response += std::string(buffer);
     }
-    std::cout<<"Response received from server:\n"+response<<std::endl;
+    std::cout << "Response received from server:\n" + response << std::endl;
 }
 
 void Client::parseAddress(std::string remoteAddress)
@@ -131,7 +130,8 @@ void Client::display_statistics()
 }
 
 // return vector [requests, successes, timeouts, error, total response time,total response time 2]
-std::vector<double> Client::get_statistics() {
+std::vector<double> Client::get_statistics()
+{
     std::vector<double> data;
 
     double total_rt = 0;
@@ -141,7 +141,7 @@ std::vector<double> Client::get_statistics() {
     data.push_back(n_req);
     data.push_back(n_succ);
     data.push_back(n_timeout);
-    data.push_back(n_req-(n_succ+n_timeout));
+    data.push_back(n_req - (n_succ + n_timeout));
     data.push_back(total_rt);
 
     return data;
@@ -155,7 +155,7 @@ void Client::submit()
         {
             setup_socket();
             if (RANDOMIZE)
-            program_filename = choose_file();
+                program_filename = choose_file();
             else
                 program_filename = "../Test_files/test4.cpp";
             send_file();

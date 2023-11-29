@@ -18,7 +18,6 @@ AsyncClient::AsyncClient(const char *submission_remote_address, const char *resp
     {
         throw("getaddrinfo error");
     }
-
 }
 
 void AsyncClient::send_file()
@@ -55,7 +54,6 @@ void AsyncClient::receive_response(int sockfd)
     {
         if (errno == EWOULDBLOCK)
             n_timeout++;
-        throw("file size read error");
     }
 
     message_size = ntohl(message_size);
@@ -72,7 +70,6 @@ void AsyncClient::receive_response(int sockfd)
         {
             if (errno == EWOULDBLOCK)
                 n_timeout++;
-            throw("socket read error");
         }
         read_bytes += current_read;
 

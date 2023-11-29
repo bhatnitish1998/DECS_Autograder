@@ -11,10 +11,10 @@ void SubmissionWorker::send_response(int sockfd, std::string response)
     length_to_send = htonl(length_to_send);
 
     if (write(sockfd, &length_to_send, sizeof(length_to_send)) < 0)
-        throw("error sending message size");
+        throw std::runtime_error("error sending message size");
 
     if (write(sockfd, response.c_str(), response.length()) < 0)
-        throw("error sending message");
+        throw std::runtime_error("error sending message");
 }
 void ResponseWorker::send_response(int sockfd, std::string response)
 {
@@ -22,10 +22,10 @@ void ResponseWorker::send_response(int sockfd, std::string response)
     length_to_send = htonl(length_to_send);
 
     if (write(sockfd, &length_to_send, sizeof(length_to_send)) < 0)
-        throw("error sending message size");
+        throw std::runtime_error("error sending message size");
 
     if (write(sockfd, response.c_str(), response.length()) < 0)
-        throw("error sending message");
+        throw std::runtime_error("error sending message");
 }
 
 void GradingWorker::cleanup()
@@ -47,7 +47,7 @@ void SubmissionWorker::receive_file()
     program_file.clear();
     uint32_t file_size;
     if (read(newsockfd, &file_size, sizeof(file_size)) < 0)
-        throw("file size read error");
+        throw std::runtime_error("file size read error");
     file_size = ntohl(file_size);
 
     char buffer[1024];
@@ -57,7 +57,7 @@ void SubmissionWorker::receive_file()
         memset(buffer, 0, sizeof(buffer));
         uint32_t current_read = read(newsockfd, buffer, sizeof(buffer));
         if (current_read == 0)
-            throw("socket read error");
+            throw std::runtime_error("socket read error");
         program_file += std::string(buffer, current_read);
         read_bytes += current_read;
     }
@@ -248,7 +248,7 @@ void ResponseWorker::recv_req_id()
     uint32_t reqId;
 
     if (read(sock_fd, &reqId, sizeof(reqId)) < 0)
-        throw("Request id read error");
+        throw std::runtime_error("Request id read error");
     req_id = ntohl(reqId);
 }
 
