@@ -116,7 +116,7 @@ uint32_t Database::insertRequest(const Request &req)
             pqxx::work txn(conn);
             std::string sql = " INSERT INTO REQUESTS(REQ_ID, PROGRAM, REQUEST_STATUS, GRADING_STATUS, OUTPUT) \
         VALUES(" + std::to_string(uuid) +
-                              "," + req.program_file + "," + req.request_status + "," + req.grading_status + "," + req.output + ");";
+                              "," + txn.quote(req.program_file) + "," + txn.quote(req.request_status) + "," + txn.quote(req.grading_status) + "," + txn.quote(req.output) + ");";
             txn.exec(sql);
             txn.commit();
             return uuid;

@@ -1,18 +1,21 @@
 #include "Worker.hpp"
-uint32_t request_id = 0;
-std::mutex id_lock;
-Worker::Worker()
-{
-}
-Worker::~Worker()
-{
-}
-
+// Unused Destructor
 GradingWorker::~GradingWorker()
 {
 }
 
-void Worker ::send_response(int sockfd, std::string response)
+void SubmissionWorker::send_response(int sockfd, std::string response)
+{
+    uint32_t length_to_send = response.length();
+    length_to_send = htonl(length_to_send);
+
+    if (write(sockfd, &length_to_send, sizeof(length_to_send)) < 0)
+        throw("error sending message size");
+
+    if (write(sockfd, response.c_str(), response.length()) < 0)
+        throw("error sending message");
+}
+void ResponseWorker::send_response(int sockfd, std::string response)
 {
     uint32_t length_to_send = response.length();
     length_to_send = htonl(length_to_send);
@@ -24,7 +27,7 @@ void Worker ::send_response(int sockfd, std::string response)
         throw("error sending message");
 }
 
-void Worker::cleanup()
+void GradingWorker::cleanup()
 {
     for (auto x : cleanuplist)
         remove(x.c_str());
@@ -57,12 +60,6 @@ void SubmissionWorker::receive_file()
         program_file += std::string(buffer, current_read);
         read_bytes += current_read;
     }
-}
-void SubmissionWorker::gen_id()
-{
-    id_lock.lock();
-    req_id = ++request_id;
-    id_lock.unlock();
 }
 uint32_t SubmissionWorker::work()
 {
@@ -112,7 +109,6 @@ GradingWorker::GradingWorker(uint32_t request_id)
     // Request present in DB
     if (fetchDB() == 0)
     {
-        Database db;
         db.updateReqStatus(req_id, "PROCESSING");
         std::string directoryPath = "temp";
 
@@ -137,8 +133,9 @@ GradingWorker::GradingWorker(uint32_t request_id)
         writeStringToFile(program_file, req.program_file);
     }
 }
-uint32_t GradingWorker::work()
+double GradingWorker::work()
 {
+    auto start_time = std::chrono::high_resolution_clock::now();
     compile();
     if (!done)
         run_program();
@@ -153,7 +150,9 @@ uint32_t GradingWorker::work()
         db.updateRequest(req_id, req);
     }
     cleanup();
-    return 0;
+    auto end_time = std::chrono::high_resolution_clock::now();
+    double service_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+    return service_time;
 }
 
 std::string readFromFile(const std::string &fileName)
@@ -264,7 +263,7 @@ uint32_t ResponseWorker::getWaitTime()
     return 2;
 }
 
-uint32_t ResponseWorker::work()
+void ResponseWorker::work()
 {
     req = db.queryFor(req_id);
     if (req.req_id == -1)
@@ -288,5 +287,4 @@ uint32_t ResponseWorker::work()
         msg = "Your grading request ID: <" + std::to_string(req_id) + "> processing is done, here are the results:\n" + req.grading_status + "\n" + req.output;
         send_response(sock_fd, msg);
     }
-    return 0;
 }

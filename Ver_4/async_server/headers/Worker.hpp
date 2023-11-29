@@ -15,46 +15,36 @@
 #include <thread>
 #include "Database.hpp"
 #include <regex>
-extern uint32_t request_id;
-extern std::mutex id_lock;
+#include <chrono>
 
-class Worker
+class SubmissionWorker
 {
-protected:
     Database db;
+    int newsockfd;
+    uint32_t req_id;
     std::string file_identifier;
     std::string program_file;
     std::string msg;
-
+    void receive_file();
     std::vector<std::string> cleanuplist;
 
     void cleanup();
-
     void send_response(int sockfd, std::string response);
-
-public:
-    Worker();
-    ~Worker();
-    virtual uint32_t work() = 0;
-};
-
-class SubmissionWorker : public Worker
-{
-    int newsockfd;
-    uint32_t req_id;
-    void receive_file();
-    void gen_id();
 
 public:
     SubmissionWorker(int sockfd);
     ~SubmissionWorker();
-    uint32_t work() override;
+    uint32_t work();
 };
-class GradingWorker : public Worker
+class GradingWorker
 {
+    Database db;
     uint32_t req_id;
     std::string executable_file;
     std::string output_file;
+    std::string file_identifier;
+    std::string program_file;
+    std::string msg;
     void compile();
     void run_program();
     void compare_output();
@@ -62,27 +52,33 @@ class GradingWorker : public Worker
     Request req;
     bool done;
     std::string base_dir; // base directory for intermediate files
+    std::vector<std::string> cleanuplist;
+
+    void cleanup();
 
 public:
     GradingWorker(uint32_t request_id);
     ~GradingWorker();
-    uint32_t work() override;
+    double work();
 };
 
-class ResponseWorker : public Worker
+class ResponseWorker
 {
+    Database db;
     uint32_t req_id;
     int sock_fd;
-    void fetchDB();
+    std::string msg;
+    Request req;
     uint32_t findQueuePos();
     uint32_t getWaitTime();
     void recv_req_id();
-    Request req;
+
+    void send_response(int sockfd, std::string response);
 
 public:
     ResponseWorker(int sockfd);
     ~ResponseWorker();
-    uint32_t work() override;
+    void work();
 };
 
 #endif
