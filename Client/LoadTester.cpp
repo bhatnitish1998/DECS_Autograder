@@ -14,7 +14,7 @@ void LoadTester::run_client() {
     client.submit();
     vector<double> data = client.get_statistics();
     {
-        unique_lock<mutex> lock;
+        unique_lock<mutex> lock(global_mutex);
         for (int i = 0; i < 5; i++) {
             global_data[i] += data[i];
         }
