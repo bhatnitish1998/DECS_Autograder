@@ -6,7 +6,7 @@ int main(int argc, char const *argv[])
     { // Process arguments
         if (argc != 7)
         {
-            throw("Usage : ./submit  <new|status> <submission-serverIP:port> <response-serverIP:port> <loopNum> <timeout> <sourceCodeFileTobeGraded|requestID>");
+            throw std::runtime_error("Usage : ./submit  <new|status> <submission-serverIP:port> <response-serverIP:port> <loopNum> <timeout> <sourceCodeFileTobeGraded|requestID>");
             exit(0);
         }
         AsyncClient client(argv[2], argv[3], atoi(argv[4]), atoi(argv[5]));
@@ -27,10 +27,9 @@ int main(int argc, char const *argv[])
             throw std::invalid_argument("Invalid second argument. Should be 'new' or 'status'.");
         }
     }
-    catch (char const *msg)
-    {
-        std::cerr << msg << std::endl;
-        perror(msg);
+    catch (const std::exception &e) {
+        std::cerr << e.what()<<std::endl;
     }
+
     return 0;
 }

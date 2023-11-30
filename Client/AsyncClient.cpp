@@ -12,11 +12,11 @@ AsyncClient::AsyncClient(const char *submission_remote_address, const char *resp
     parseResponseAddress(response_remote_address);
     if ((status = getaddrinfo(submission_serverIp.c_str(), submission_port.c_str(), &hints, &submission_servinfo)) != 0)
     {
-        throw("getaddrinfo error");
+        throw std::runtime_error("getaddrinfo error");
     }
     if ((status = getaddrinfo(response_serverIp.c_str(), response_port.c_str(), &hints, &response_servinfo)) != 0)
     {
-        throw("getaddrinfo error");
+        throw std::runtime_error("getaddrinfo error");
     }
 }
 
@@ -27,11 +27,11 @@ void AsyncClient::send_file()
     uint32_t length_to_send = htonl(file_size);
 
     if (write(submission_sockfd, &length_to_send, sizeof(length_to_send)) < 0)
-        throw("error sending file size");
+        throw std::runtime_error("error sending file size");
 
     std::ifstream fin(program_filename, std::ios::binary);
     if (!fin)
-        throw("error opening file");
+        throw std::runtime_error("error opening file");
 
     char buffer[1024];
     while (!fin.eof())
@@ -41,7 +41,7 @@ void AsyncClient::send_file()
         int k = fin.gcount();
         int n = write(submission_sockfd, buffer, k);
         if (n < 0)
-            throw("error writing file");
+            throw std::runtime_error("error writing file");
     }
 }
 
@@ -50,10 +50,14 @@ void AsyncClient::receive_response(int sockfd)
     std::string response = "";
     int status;
     uint32_t message_size;
-    if ((status = read(sockfd, &message_size, sizeof(message_size))) < 0)
+    if ((status = recv(sockfd, &message_size, sizeof(message_size),0)) <0 )
     {
-        if (errno == EWOULDBLOCK)
-            n_timeout++;
+//        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+//            n_timeout++;
+//            throw std::runtime_error("timeout 1");
+//        }
+        n_timeout++;
+        throw std::runtime_error("timeout ");
     }
 
     message_size = ntohl(message_size);
@@ -61,22 +65,29 @@ void AsyncClient::receive_response(int sockfd)
     char buffer[1024];
     uint32_t read_bytes = 0;
     uint32_t current_read = 0;
+
+    int retry =0;
     while (read_bytes < message_size)
     {
         current_read = 0;
         memset(buffer, 0, sizeof(buffer));
-        current_read = read(sockfd, buffer, sizeof(buffer));
-        if (current_read < 0)
+        status = recv(sockfd, buffer, sizeof(buffer),0);
+        if (status <0 )
         {
-            if (errno == EWOULDBLOCK)
-                n_timeout++;
+//            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+//                n_timeout++;
+//                throw std::runtime_error("timeout 1");
+//            }
+            n_timeout++;
+            throw std::runtime_error("timeout ");
         }
-        read_bytes += current_read;
-
-        response += std::string(buffer);
+        if(status > 0) {
+            current_read = status;
+            read_bytes += current_read;
+            response += std::string(buffer);
+        }
     }
-    response_string = response;
-    std::cout << response << "\n";
+//    std::cout << "Response received from server:\n" + response << std::endl;
 }
 
 void AsyncClient::parseSubmissionAddress(std::string remoteAddress)
@@ -85,7 +96,7 @@ void AsyncClient::parseSubmissionAddress(std::string remoteAddress)
 
     if (colonPos == std::string::npos)
     {
-        throw("Invalid server argument format. Use <server-ip:port>");
+        throw std::runtime_error("Invalid server argument format. Use <server-ip:port>");
     }
 
     // Extract the IP address and port
@@ -99,7 +110,7 @@ void AsyncClient::parseResponseAddress(std::string remoteAddress)
 
     if (colonPos == std::string::npos)
     {
-        throw("Invalid server argument format. Use <server-ip:port>");
+        throw std::runtime_error("Invalid server argument format. Use <server-ip:port>");
     }
 
     // Extract the IP address and port
@@ -110,30 +121,30 @@ void AsyncClient::parseResponseAddress(std::string remoteAddress)
 void AsyncClient::setup_submission_socket()
 {
     if ((submission_sockfd = socket(submission_servinfo->ai_family, submission_servinfo->ai_socktype, submission_servinfo->ai_protocol)) == -1)
-        throw("Error opening socket");
+        throw std::runtime_error("Error opening socket");
 
-    timeval time_out;
-    time_out.tv_sec = timeout;
-    time_out.tv_usec = 0;
-    if (setsockopt(submission_sockfd, SOL_SOCKET, SO_RCVTIMEO, &time_out, sizeof(time_out)) == -1)
-    {
-        close(submission_sockfd);
-        throw("Set socket timeout failed");
-    }
+//    timeval time_out;
+//    time_out.tv_sec = timeout;
+//    time_out.tv_usec = 0;
+//    if (setsockopt(submission_sockfd, SOL_SOCKET, SO_RCVTIMEO, &time_out, sizeof(time_out)) == -1)
+//    {
+//        close(submission_sockfd);
+//        throw std::runtime_error("Set socket timeout failed");
+//    }
 
     int sc = connect(submission_sockfd, submission_servinfo->ai_addr, submission_servinfo->ai_addrlen);
     if (sc < 0)
-        throw("Cannot connect");
+        throw std::runtime_error("Cannot connect");
 }
 
 void AsyncClient::setup_response_socket()
 {
     if ((response_sockfd = socket(response_servinfo->ai_family, response_servinfo->ai_socktype, response_servinfo->ai_protocol)) == -1)
-        throw("Error opening socket");
+        throw std::runtime_error("Error opening socket");
 
     int sc = connect(response_sockfd, response_servinfo->ai_addr, response_servinfo->ai_addrlen);
     if (sc < 0)
-        throw("Cannot connect");
+        throw std::runtime_error("Cannot connect");
 }
 
 std::string AsyncClient::choose_file()
@@ -208,7 +219,7 @@ void AsyncClient::send_req_id()
 {
     auto id = htonl(req_id);
     if (write(response_sockfd, &id, sizeof(id)) < 0)
-        throw("Request id send error");
+        throw std::runtime_error("Request id send error");
 }
 
 void AsyncClient::checkStatus(const uint32_t request_id)
