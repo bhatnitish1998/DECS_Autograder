@@ -20,18 +20,26 @@ void ResponseServer::setup_threadpool()
 /// @brief Accepts a request and puts into queue
 void ResponseServer::accept_requests()
 {
-    sockaddr_in client_addr;
-    socklen_t client_length = sizeof(client_addr);
-
-    int newsockfd = accept(sockfd, (sockaddr *)&client_addr, &client_length);
-    if (newsockfd < 0)
-        throw std::runtime_error("Error accepting connection");
-
-    // block important for unlocking mutex when out of scope.
+    try
     {
-        std::unique_lock<std::mutex> lock(status_queue_mutex);
-        status_queue.push(newsockfd);
+        sockaddr_in client_addr;
+        socklen_t client_length = sizeof(client_addr);
+
+        int newsockfd = accept(sockfd, (sockaddr *)&client_addr, &client_length);
+        if (newsockfd < 0)
+            throw std::runtime_error("Error accepting connection");
+
+        // block important for unlocking mutex when out of scope.
+        {
+            std::unique_lock<std::mutex> lock(status_queue_mutex);
+            status_queue.push(newsockfd);
+        }
     }
+    catch (const std::exception &e)
+    {
+        std::cerr << e.what() << '\n';
+    }
+
     status_queue_cond.notify_one();
 }
 /// @brief Creates, binds and listens on a socket

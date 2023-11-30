@@ -13,7 +13,6 @@ void SubmissionServer::setup_control()
         throw std::runtime_error("setsockopt failed");
     }
 
-
     memset(&control_addr, 0, sizeof(control_addr));
     control_addr.sin_family = AF_INET;
     control_addr.sin_port = htons(CONTROL_PORT);
@@ -160,17 +159,24 @@ SubmissionServer::SubmissionServer(const char *port, const char *pool_size)
 
 void SubmissionServer::accept_requests()
 {
-    sockaddr_in client_addr;
-    socklen_t client_length = sizeof(client_addr);
-
-    int newsockfd = accept(sockfd, (sockaddr *)&client_addr, &client_length);
-    if (newsockfd < 0)
-        throw std::runtime_error("Error accepting connection");
-
-    // block important for unlocking mutex when out of scope.
+    try
     {
-        std::unique_lock<std::mutex> lock(submission_queue_mutex);
-        submission_queue.push(newsockfd);
+        sockaddr_in client_addr;
+        socklen_t client_length = sizeof(client_addr);
+
+        int newsockfd = accept(sockfd, (sockaddr *)&client_addr, &client_length);
+        if (newsockfd < 0)
+            throw std::runtime_error("Error accepting connection");
+
+        // block important for unlocking mutex when out of scope.
+        {
+            std::unique_lock<std::mutex> lock(submission_queue_mutex);
+            submission_queue.push(newsockfd);
+        }
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << e.what() << '\n';
     }
     submission_queue_cond.notify_one();
 }
