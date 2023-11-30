@@ -16,31 +16,22 @@
 #include <regex>
 class AsyncClient
 {
-    int submission_sockfd, response_sockfd, iterations;
+    int sockfd;
     uint32_t req_id;
-    addrinfo *submission_servinfo, *response_servinfo;
+    addrinfo *servinfo;
     std::string program_filename;
-    std::string submission_serverIp, submission_port;
-    std::string response_serverIp, response_port;
-    size_t timeout, n_timeout, n_succ, n_req;
-    std::vector<double> response_time_ack, response_time_done;
-    std::vector<std::string> test_files;
-
+    std::string serverIp, serverPort;
+    std::string remote_address;
     std::string response_string;
 
-    void parseSubmissionAddress(std::string remoteAddress);
-    void parseResponseAddress(std::string remoteAddress);
-    void setup_submission_socket();
-    void setup_response_socket();
+    void parseAddress(std::string remoteAddress);
+    void setup_socket();
     void send_file();
     void send_req_id();
     void receive_response(int sockfd);
-    std::string choose_file();
-    std::vector<double> get_statistics();
-    uint32_t getIDFromMessage();
 
 public:
-    AsyncClient(const char *submission_remote_address, const char *response_remote_address, int loop_num, int time_out);
+    AsyncClient(const char *remote_address);
     void submit(const char *filename);
     void checkStatus(const uint32_t request_id);
 };
