@@ -30,7 +30,7 @@ R_OBJECTS = $(filter-out src/Submission.o src/SubmissionServer.o ,$(OBJECTS))
 OUTPUT_DIR = bin
 
 # Executable name
-SUBMISSION_EXECUTABLE = $(OUTPUT_DIR)/submission_server
+SUBMISSION_EXECUTABLE = $(OUTPUT_DIR)/submit_server
 RESPONSE_EXECUTABLE = $(OUTPUT_DIR)/response_server
 
 all: submission response

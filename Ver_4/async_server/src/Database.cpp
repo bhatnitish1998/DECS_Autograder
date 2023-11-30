@@ -8,6 +8,7 @@ Database::Database(/* args */)
 /// @brief Closes connection
 Database::~Database()
 {
+    conn.close();
 }
 uint32_t generateRandom32BitUUID()
 {
