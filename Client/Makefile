@@ -9,7 +9,7 @@ normalclient :	normal_main.o normal_client.o
 LoadTester.o :  LoadTester.h LoadTester.cpp
 	g++ -c LoadTester.cpp
 	
-normal_client.o : normal_main.cpp normal_client.hpp
+normal_client.o : normal_client.cpp normal_client.hpp
 	g++ -c normal_client.cpp
 
 Client.o : Client.hpp Client.cpp

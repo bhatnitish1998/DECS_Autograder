@@ -13,16 +13,19 @@ Client::Client(const char *remote_address, const char *program_filename) : progr
     {
         throw std::runtime_error("getaddrinfo error");
     }
+    setup_socket();
 }
 
 void Client::send_file()
 {
     uint32_t file_size = std::filesystem::file_size(program_filename);
-    std::cerr << file_size;
     uint32_t length_to_send = htonl(file_size);
 
     if (write(sockfd, &length_to_send, sizeof(length_to_send)) <= 0)
+    {
+        perror("write");
         throw std::runtime_error("error sending file size");
+    }
 
     std::ifstream fin(program_filename, std::ios::binary);
     if (!fin)
