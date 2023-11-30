@@ -16,16 +16,12 @@ AsyncClient::AsyncClient(const char *submission_remote_address, const char *resp
     parseResponseAddress(response_remote_address);
     if ((status = getaddrinfo(submission_serverIp.c_str(), submission_port.c_str(), &hints, &submission_servinfo)) != 0)
     {
-        throw("getaddrinfo error");
+        throw std::runtime_error("getaddrinfo error");
     }
     if ((status = getaddrinfo(response_serverIp.c_str(), response_port.c_str(), &hints, &response_servinfo)) != 0)
     {
-        throw("getaddrinfo error");
+        throw std::runtime_error("getaddrinfo error");
     }
-
-    std::string path = "input/";
-    for (const auto &file : std::filesystem::directory_iterator(path))
-        test_files.push_back(file.path());
 }
 /// @brief Sends program file to submission server
 void AsyncClient::send_file()
@@ -35,11 +31,11 @@ void AsyncClient::send_file()
     uint32_t length_to_send = htonl(file_size);
 
     if (write(submission_sockfd, &length_to_send, sizeof(length_to_send)) < 0)
-        throw("error sending file size");
+        throw std::runtime_error("error sending file size");
 
     std::ifstream fin(program_filename, std::ios::binary);
     if (!fin)
-        throw("error opening file");
+        throw std::runtime_error("error opening file");
 
     char buffer[1024];
     while (!fin.eof())
@@ -50,7 +46,7 @@ void AsyncClient::send_file()
         // todo: handle if kernel fails to send the data
         int n = write(submission_sockfd, buffer, k);
         if (n < 0)
-            throw("error writing file");
+            throw std::runtime_error("error writing file");
     }
 }
 /// @brief receives response from given socket descriptor
@@ -62,16 +58,15 @@ void AsyncClient::receive_response(int sockfd)
     uint32_t message_size;
     if ((status = read(sockfd, &message_size, sizeof(message_size))) < 0)
     {
-        if (errno == EWOULDBLOCK)
-            n_timeout++;
-        throw("file size read error");
+        n_timeout++;
+        throw std::runtime_error("timeout");
     }
 
     message_size = ntohl(message_size);
 
     char buffer[1024];
     uint32_t read_bytes = 0;
-    uint32_t current_read = 0;
+    int current_read = 0;
     while (read_bytes < message_size)
     {
         current_read = 0;
@@ -79,9 +74,8 @@ void AsyncClient::receive_response(int sockfd)
         current_read = read(sockfd, buffer, sizeof(buffer));
         if (current_read < 0)
         {
-            if (errno == EWOULDBLOCK)
-                n_timeout++;
-            throw("socket read error");
+            n_timeout++;
+            throw std::runtime_error("timeout");
         }
         read_bytes += current_read;
 
@@ -98,7 +92,7 @@ void AsyncClient::parseSubmissionAddress(std::string remoteAddress)
 
     if (colonPos == std::string::npos)
     {
-        throw("Invalid server argument format. Use <server-ip:port>");
+        throw std::runtime_error("Invalid server argument format. Use <server-ip:port>");
     }
 
     // Extract the IP address and port
@@ -113,7 +107,7 @@ void AsyncClient::parseResponseAddress(std::string remoteAddress)
 
     if (colonPos == std::string::npos)
     {
-        throw("Invalid server argument format. Use <server-ip:port>");
+        throw std::runtime_error("Invalid server argument format. Use <server-ip:port>");
     }
 
     // Extract the IP address and port
@@ -124,30 +118,30 @@ void AsyncClient::parseResponseAddress(std::string remoteAddress)
 void AsyncClient::setup_submission_socket()
 {
     if ((submission_sockfd = socket(submission_servinfo->ai_family, submission_servinfo->ai_socktype, submission_servinfo->ai_protocol)) == -1)
-        throw("Error opening socket");
+        throw std::runtime_error("Error opening socket");
 
-    timeval time_out;
-    time_out.tv_sec = timeout;
-    time_out.tv_usec = 0;
-    if (setsockopt(submission_sockfd, SOL_SOCKET, SO_RCVTIMEO, &time_out, sizeof(time_out)) == -1)
-    {
-        close(submission_sockfd);
-        throw("Set socket timeout failed");
-    }
+    // timeval time_out;
+    // time_out.tv_sec = timeout;
+    // time_out.tv_usec = 0;
+    // if (setsockopt(submission_sockfd, SOL_SOCKET, SO_RCVTIMEO, &time_out, sizeof(time_out)) == -1)
+    // {
+    //     close(submission_sockfd);
+    //     throw std::runtime_error("Set socket timeout failed");
+    // }
 
     int sc = connect(submission_sockfd, submission_servinfo->ai_addr, submission_servinfo->ai_addrlen);
     if (sc < 0)
-        throw("Cannot connect");
+        throw std::runtime_error("Cannot connect");
 }
 /// @brief Creates socket and connects to response server
 void AsyncClient::setup_response_socket()
 {
     if ((response_sockfd = socket(response_servinfo->ai_family, response_servinfo->ai_socktype, response_servinfo->ai_protocol)) == -1)
-        throw("Error opening socket");
+        throw std::runtime_error("Error opening socket");
 
     int sc = connect(response_sockfd, response_servinfo->ai_addr, response_servinfo->ai_addrlen);
     if (sc < 0)
-        throw("Cannot connect");
+        throw std::runtime_error("Cannot connect");
 }
 
 std::string AsyncClient::choose_file()
@@ -191,6 +185,7 @@ uint32_t AsyncClient::getIDFromMessage()
     size_t lastPos = response_string.find('>');
     auto id_string = response_string.substr(firstPos + 1, lastPos - firstPos - 1);
     uint32_t request_id = static_cast<uint32_t>(std::stol(id_string));
+    std::cerr << request_id << "\n";
     return request_id;
 }
 /// @brief Simulates multiple requests to submission server and polls response server in 1 second interval
@@ -214,9 +209,9 @@ void AsyncClient::submit(const char *filename)
             uint32_t req_id = getIDFromMessage();
             checkStatus(req_id);
         }
-        catch (const char *msg)
+        catch (const std::exception &e)
         {
-            std::cerr << msg << std::endl;
+            std::cerr << e.what() << std::endl;
         }
         close(submission_sockfd);
     }
@@ -226,7 +221,7 @@ void AsyncClient::send_req_id()
 {
     auto id = htonl(req_id);
     if (write(response_sockfd, &id, sizeof(id)) < 0)
-        throw("Request id send error");
+        throw std::runtime_error("Request id send error");
 }
 /// @brief Function to query status of a request id
 /// @param request_id Id to query for
