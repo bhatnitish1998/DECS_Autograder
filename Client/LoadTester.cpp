@@ -39,7 +39,7 @@ void LoadTester::establish_control_connection() {
 
     control_sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (control_sockfd < 0)
-        throw("Error opening control socket");
+        throw std::runtime_error("Error opening control socket");
 
     sockaddr_in control_addr;
     memset(&control_addr, 0, sizeof(control_addr));
@@ -49,14 +49,14 @@ void LoadTester::establish_control_connection() {
 
     int sc = connect(control_sockfd, (struct sockaddr *)&control_addr, sizeof(control_addr));
     if (sc < 0)
-        throw("Cannot connect");
+        throw std::runtime_error("Cannot connect");
 }
 
 void LoadTester::send_long(uint32_t value)
 {
     value = htonl(value);
-    if (write(control_sockfd, &value, sizeof(value)) < 0)
-        throw("error sending control message");
+    if (write(control_sockfd, &value, sizeof(value)) <= 0)
+        throw std::runtime_error("error sending control message");
 }
 
 

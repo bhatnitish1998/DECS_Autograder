@@ -7,13 +7,13 @@ int main(int argc, char const *argv[])
     {   // Process arguments
         if (argc < 3)
         {
-            throw("Usage : ./LoadTester <server ip:port> <version>");
+            throw std::runtime_error("Usage : ./LoadTester <server ip:port> <version>");
             exit(0);
         }
         int version = atoi(argv[2]);
         if(version == 4 and argc !=4)
         {
-            throw("Usage : ./LoadTester <submission server ip:port> 4 <response server ip:port>");
+            throw std::runtime_error("Usage : ./LoadTester <submission server ip:port> 4 <response server ip:port>");
         }
 
         string op;
@@ -30,10 +30,9 @@ int main(int argc, char const *argv[])
         LoadTester lt = LoadTester(argv[1],version,op.c_str());
         lt.run_test();
     }
-    catch (char const *msg)
+    catch (std::exception &e)
     {
-        std::cerr << msg << std::endl;
-        perror(msg);
+        std::cerr << e.what() << std::endl;
     }
     return 0;
 }

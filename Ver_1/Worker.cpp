@@ -43,10 +43,10 @@ void Worker ::send_response()
         uint32_t length_to_send = msg.length();
         length_to_send = htonl(length_to_send);
 
-        if (write(newsockfd, &length_to_send, sizeof(length_to_send)) < 0)
+        if (write(newsockfd, &length_to_send, sizeof(length_to_send)) <= 0)
             throw std::runtime_error("error sending message size");
 
-        if (write(newsockfd, msg.c_str(), msg.length()) < 0)
+        if (write(newsockfd, msg.c_str(), msg.length()) <= 0)
             throw std::runtime_error("error sending message");
 
         return;
@@ -55,10 +55,10 @@ void Worker ::send_response()
     response_size += msg.length();
     uint32_t length_to_send = htonl(response_size);
 
-    if (write(newsockfd, &length_to_send, sizeof(length_to_send)) < 0)
+    if (write(newsockfd, &length_to_send, sizeof(length_to_send)) <= 0)
         throw std::runtime_error("error sending filesize");
 
-    if (write(newsockfd, msg.c_str(), msg.length()) < 0)
+    if (write(newsockfd, msg.c_str(), msg.length()) <= 0)
         throw std::runtime_error("error sending message");
 
     std::ifstream fin(file_to_send, std::ios::binary);
@@ -80,7 +80,7 @@ void Worker ::send_response()
 void Worker::receive_file()
 {
     uint32_t file_size;
-    if (read(newsockfd, &file_size, sizeof(file_size)) < 0)
+    if (read(newsockfd, &file_size, sizeof(file_size)) <= 0)
         throw std::runtime_error("file size read error");
     file_size = ntohl(file_size);
 

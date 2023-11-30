@@ -57,19 +57,25 @@ void Server::setup_socket()
 
 void Server::accept_requests()
 {
-    sockaddr_in client_addr;
-    socklen_t client_length = sizeof(client_addr);
+    try {
+        sockaddr_in client_addr;
+        socklen_t client_length = sizeof(client_addr);
 
-    int newsockfd = accept(sockfd, (sockaddr *)&client_addr, &client_length);
-    if (newsockfd < 0)
-        throw std::runtime_error("Error accepting connection");
+        int newsockfd = accept(sockfd, (sockaddr *) &client_addr, &client_length);
+        if (newsockfd < 0)
+            throw std::runtime_error("Error accepting connection");
 
-    Worker worker(newsockfd);
+        Worker worker(newsockfd);
 
-    double temp_st = worker.process_request();
+        double temp_st = worker.process_request();
+        {
+            std::unique_lock<std::mutex> lock(service_mutex);
+            service_time = temp_st;
+        }
+    }
+    catch (std::exception &e)
     {
-        std::unique_lock<std::mutex> lock(service_mutex);
-        service_time = temp_st;
+        std::cerr << e.what() << std::endl;
     }
 }
 
@@ -144,6 +150,7 @@ void Server::control_thread_function()
         if (number_of_clients)
         {
             fout << number_of_clients << std::endl;
+            std::cerr << number_of_clients << std::endl;
             if (number_of_clients > 5000)
             {
                 fout.close();

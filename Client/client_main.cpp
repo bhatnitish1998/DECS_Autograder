@@ -7,16 +7,15 @@ int main(int argc, char const *argv[])
     {   // Process arguments
         if (argc != 6)
         {
-            throw("Usage : ./client <serverip:port> <loopNum> <sleepTime> <timeout> <file_to_submit>");
+            throw std::runtime_error("Usage : ./client <serverip:port> <loopNum> <sleepTime> <timeout> <file_to_submit>");
             exit(0);
         }
         Client client(argv[1], atoi(argv[2]), atoi(argv[3]), atoi(argv[4]),argv[5]);
         client.submit();
     }
-    catch (char const *msg)
+    catch (std::exception &e)
     {
-        std::cerr << msg << std::endl;
-        perror(msg);
+        std::cerr << e.what() << std::endl;
     }
     return 0;
 }
