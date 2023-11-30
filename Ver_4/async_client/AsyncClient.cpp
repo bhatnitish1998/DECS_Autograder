@@ -225,6 +225,7 @@ void AsyncClient::send_req_id()
 void AsyncClient::checkStatus(const uint32_t request_id)
 {
     // The regular expression pattern to search for
+    auto start_time = std::chrono::high_resolution_clock::now();
     std::regex pattern("done");
     req_id = request_id;
     // poll the server until grading is done
@@ -232,7 +233,6 @@ void AsyncClient::checkStatus(const uint32_t request_id)
     {
         setup_response_socket();
         send_req_id();
-        auto start_time = std::chrono::high_resolution_clock::now();
         receive_response(response_sockfd);
         // Check if the response contatins done somewhere
         if (std::regex_search(response_string, pattern))
