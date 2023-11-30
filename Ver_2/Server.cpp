@@ -57,14 +57,20 @@ void Server::setup_socket()
 
 void Server::accept_requests()
 {
-    sockaddr_in client_addr;
-    socklen_t client_length = sizeof(client_addr);
+    try {
+        sockaddr_in client_addr;
+        socklen_t client_length = sizeof(client_addr);
 
-    int newsockfd = accept(sockfd, (sockaddr *)&client_addr, &client_length);
-    if (newsockfd < 0)
-        throw std::runtime_error("Error accepting connection");
+        int newsockfd = accept(sockfd, (sockaddr *) &client_addr, &client_length);
+        if (newsockfd < 0)
+            throw std::runtime_error("Error accepting connection");
 
-    std::thread(&Server::thread_function, this, newsockfd).detach();
+        std::thread(&Server::thread_function, this, newsockfd).detach();
+    }
+    catch (std::exception &e)
+    {
+        std::cerr << e.what() << std::endl;
+    }
 }
 
 void Server::thread_function(int newsockfd)

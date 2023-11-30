@@ -11,7 +11,7 @@
 // variables for number of clients interval generation for graphs
 #define INITIAL 5
 #define INTERVAL 5
-#define TIMES 20
+#define TIMES 10
 
 // Loadtesting client parameters
 #define LOOPNUM 5

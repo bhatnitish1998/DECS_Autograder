@@ -64,17 +64,23 @@ void Server::setup_threadpool()
 
 void Server::accept_requests()
 {
-    sockaddr_in client_addr;
-    socklen_t client_length = sizeof(client_addr);
+    try {
+        sockaddr_in client_addr;
+        socklen_t client_length = sizeof(client_addr);
 
-    int newsockfd = accept(sockfd, (sockaddr *)&client_addr, &client_length);
-    if (newsockfd < 0)
-        throw std::runtime_error("Error accepting connection");
+        int newsockfd = accept(sockfd, (sockaddr *) &client_addr, &client_length);
+        if (newsockfd < 0)
+            throw std::runtime_error("Error accepting connection");
 
-    // block for mutex
+        // block for mutex
+        {
+            std::unique_lock<std::mutex> lock(queue_mutex);
+            request_queue.push(newsockfd);
+        }
+    }
+    catch (std::exception &e)
     {
-        std::unique_lock<std::mutex> lock(queue_mutex);
-        request_queue.push(newsockfd);
+        std::cerr << e.what() << std::endl;
     }
     queue_cond.notify_one();
 }
