@@ -5,7 +5,7 @@
 /// @param loop_num Number of requests to send
 /// @param timeout Timeout in seconds
 AsyncClient::AsyncClient(const char *submission_remote_address, const char *response_remote_address, int loop_num, int timeout)
-        : n_req(0), n_succ(0), n_timeout(0), timeout(timeout), iterations(loop_num)
+    : n_req(0), n_succ(0), n_timeout(0), timeout(timeout), iterations(loop_num)
 {
     int status;
     addrinfo hints, *p;
@@ -26,7 +26,7 @@ AsyncClient::AsyncClient(const char *submission_remote_address, const char *resp
 /// @brief Sends program file to submission server
 void AsyncClient::send_file()
 {
-//    std::cout << "Sending file " << program_filename << "\n";
+    //    std::cout << "Sending file " << program_filename << "\n";
     uint32_t file_size = std::filesystem::file_size(program_filename);
     uint32_t length_to_send = htonl(file_size);
 
@@ -34,7 +34,8 @@ void AsyncClient::send_file()
         throw std::runtime_error("error sending file size");
 
     std::ifstream fin(program_filename, std::ios::binary);
-    if (!fin) {
+    if (!fin)
+    {
         fin.close();
         throw std::runtime_error("error opening file");
     }
@@ -46,14 +47,13 @@ void AsyncClient::send_file()
         fin.read(buffer, sizeof(buffer));
         int k = fin.gcount();
         int n = write(submission_sockfd, buffer, k);
-        if (n < 0) {
+        if (n < 0)
+        {
             fin.close();
             throw std::runtime_error("error writing file");
         }
-
     }
     fin.close();
-
 }
 /// @brief receives response from given socket descriptor
 /// @param sockfd Socket descriptor
@@ -88,7 +88,7 @@ void AsyncClient::receive_response(int sockfd)
         response += std::string(buffer);
     }
     response_string = response;
-//    std::cout << response << "\n";
+    //    std::cout << response << "\n";
 }
 /// @brief Parse submission server address
 /// @param remoteAddress
@@ -125,15 +125,6 @@ void AsyncClient::setup_submission_socket()
 {
     if ((submission_sockfd = socket(submission_servinfo->ai_family, submission_servinfo->ai_socktype, submission_servinfo->ai_protocol)) == -1)
         throw std::runtime_error("Error opening socket");
-
-    // timeval time_out;
-    // time_out.tv_sec = timeout;
-    // time_out.tv_usec = 0;
-    // if (setsockopt(submission_sockfd, SOL_SOCKET, SO_RCVTIMEO, &time_out, sizeof(time_out)) == -1)
-    // {
-    //     close(submission_sockfd);
-    //     throw std::runtime_error("Set socket timeout failed");
-    // }
 
     int sc = connect(submission_sockfd, submission_servinfo->ai_addr, submission_servinfo->ai_addrlen);
     if (sc < 0)
@@ -219,6 +210,7 @@ void AsyncClient::submit(const char *filename)
             std::cerr << e.what() << std::endl;
         }
         close(submission_sockfd);
+        sleep(1);
     }
 }
 /// @brief Sends request id to response server
