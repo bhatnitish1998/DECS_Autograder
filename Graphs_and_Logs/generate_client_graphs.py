@@ -106,18 +106,6 @@ plt.ylabel("Timeout percent")
 plt.savefig("timeout_percent.png")
 plt.clf()
 
-#error percent
-plt.plot(clients[0],error[0],label="Version 1")
-plt.plot(clients[1],error[1],label="Version 2") 
-plt.plot(clients[2],error[2],label="Version 3")
-plt.plot(clients[3],error[3],label="Version 4")
-plt.legend(loc=0)
-plt.grid()
-plt.ylim(0,100)
-plt.xlabel("Number of Clients")
-plt.ylabel("Other errors percent")
-plt.savefig("error_percent.png")
-plt.clf()
 
 
 #average response time 

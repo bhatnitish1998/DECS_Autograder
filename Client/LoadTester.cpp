@@ -93,7 +93,7 @@ void LoadTester::run_test() {
         fout << (global_data[3]/global_data[0])*100 << ","; // other error percent
         fout << global_data[4]/global_data[1] << ","; // average response time
         fout << (global_data[1]/time_elapsed)*1000; // throughput
-        if(version ==4) fout<<","<<global_data[5]/global_data[0];
+        if(version ==4) fout<<","<<global_data[5]/global_data[1];
         fout<<endl;
 
         // reset data for next iteration
