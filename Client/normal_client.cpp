@@ -1,6 +1,6 @@
 #include "normal_client.hpp"
 
-Client::Client(const char *remote_address, const char *program_filename) :program_filename(program_filename)
+Client::Client(const char *remote_address, const char *program_filename) : program_filename(program_filename)
 {
 
     int status;
@@ -18,6 +18,7 @@ Client::Client(const char *remote_address, const char *program_filename) :progra
 void Client::send_file()
 {
     uint32_t file_size = std::filesystem::file_size(program_filename);
+    std::cerr << file_size;
     uint32_t length_to_send = htonl(file_size);
 
     if (write(sockfd, &length_to_send, sizeof(length_to_send)) <= 0)
@@ -44,7 +45,7 @@ void Client::receive_response()
     std::string response = "";
     int status;
     uint32_t message_size;
-    if ((status = recv(sockfd, &message_size, sizeof(message_size),0)) <0 )
+    if ((status = recv(sockfd, &message_size, sizeof(message_size), 0)) < 0)
     {
         throw std::runtime_error("file size read error");
     }
@@ -55,14 +56,15 @@ void Client::receive_response()
     uint32_t read_bytes = 0;
     uint32_t current_read = 0;
 
-    int retry =0;
+    int retry = 0;
     while (read_bytes < message_size)
     {
         current_read = 0;
         memset(buffer, 0, sizeof(buffer));
-        status = recv(sockfd, buffer, sizeof(buffer),0);
+        status = recv(sockfd, buffer, sizeof(buffer), 0);
 
-        if(status > 0) {
+        if (status > 0)
+        {
             current_read = status;
             read_bytes += current_read;
             response += std::string(buffer);
@@ -90,25 +92,22 @@ void Client::setup_socket()
     if ((sockfd = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol)) == -1)
         throw std::runtime_error("Error opening socket");
 
-
     int sc = connect(sockfd, servinfo->ai_addr, servinfo->ai_addrlen);
     if (sc < 0)
         throw std::runtime_error("Cannot connect");
 }
 
-
 void Client::submit()
 {
-        try
-        {
-            send_file();
-            receive_response();
-        }
-        catch (std::exception &e)
-        {
-            std::cerr << e.what() << std::endl;
-        }
+    try
+    {
+        send_file();
+        receive_response();
+    }
+    catch (std::exception &e)
+    {
+        std::cerr << e.what() << std::endl;
+    }
 
-        close(sockfd);
-
+    close(sockfd);
 }

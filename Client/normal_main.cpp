@@ -1,11 +1,10 @@
 #include "normal_client.hpp"
 
-
 int main(int argc, char const *argv[])
 {
     try
-    {   // Process arguments
-        if (argc != 2)
+    { // Process arguments
+        if (argc != 3)
         {
             throw std::runtime_error("Usage : ./client <serverip:port> <file_to_submit>");
             exit(0);
